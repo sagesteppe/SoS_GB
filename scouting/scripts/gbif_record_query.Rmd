@@ -14,6 +14,7 @@ library(sf)
 library(rgbif)
 library(BIEN)
 library(nngeo)
+source('functions.R')
 ```
 
 
@@ -120,15 +121,82 @@ ifelse(!dir.exists(file.path('../data', 'GBIF')),
        dir.create(file.path('../data', 'GBIF')), FALSE)
 st_write(spp_occ, file.path('../data', 'GBIF', 'GBIF_cleaned.shp'), append = F)
 
-rm(syn, lkp_tab)
+rm(syn, lkp_tab, spp_occ)
 ```
 
-
-```{r download bien records for study area}
+```{r download and clean bien records for study area, eval = F}
 
 bien_dl <- lapply(target_taxa, BIEN_occurrence_species,
                   new.world = T, observation.type = T,  collection.info = T, 
                   only.geovalid = T)
+
+bien_stuff <- bien_dl[sapply(bien_dl, function(x) dim(x)[1]) > 0] %>% 
+  bind_rows() %>% 
+  select(scrubbed_species_binomial:custodial_institution_codes, -dataset) %>% 
+  st_as_sf(coords = c('longitude', 'latitude'), crs = 4326) %>% 
+  rename(date = 'date_collected...4') %>% 
+  drop_na(date)
+
+bien_stuff <- bien_stuff[
+  st_covered_by(bien_stuff, st_transform(field_off, st_crs(bien_stuff))) %>% 
+    lengths > 0,]
+
+bien_stuff <- bien_stuff %>% 
+  mutate(year = str_extract(date, '^[0-9]{4}'), .after = date) %>% 
+  filter(year >= 1900)
+
+ifelse(!dir.exists(file.path('../data', 'BIEN')), 
+       dir.create(file.path('../data', 'BIEN')), FALSE)
+st_write(bien_stuff, file.path('../data', 'BIEN', 'BIEN_cleaned.shp'), append = F)
+
+rm(bien_dl, bien_stuff)
+```
+
+
+```{r identify distinct records between gbif and bien}
+
+bien <- st_read(file.path('../data', 'BIEN', 'BIEN_cleaned.shp'), quiet = T)
+gbif <- st_read(file.path('../data', 'GBIF', 'GBIF_cleaned.shp'), quiet = T)
+
+bien <- bien %>% 
+  arrange(scrbb__) 
+bien_recs <- bien %>% 
+  group_by(scrbb__) %>% 
+  group_split()
+names(bien_recs) <- unique(bien$scrbb__)
+
+gbif_sub <- gbif %>% 
+  arrange(species)  %>% 
+  filter(species != 'Astragalus eremiticus')
+gbif_recs <- gbif_sub %>% 
+  group_by(species) %>% 
+  group_split()
+names(gbif_recs) <- unique(gbif_sub$species)
+
+gbif_out <- mapply(dupe_dropper, x = gbif_recs, y = bien_recs, dist_thresh = 1000, 
+               SIMPLIFY = FALSE) %>% 
+  bind_rows()
+
+gbif <- bind_rows(gbif_out, filter(gbif, species == 'Astragalus eremiticus')) %>% 
+  unite('date', c('year', 'month', 'day'), sep = '-', remove = F ) %>% 
+  mutate(date = as.Date(date)) %>% 
+  select(species, date, year) 
+
+consensus <- bien %>% 
+  select(species = scrbb__, date, year) %>% 
+  mutate(year = as.numeric(year)) %>% 
+  bind_rows(gbif, .) %>% 
+  arrange(species, year)
+
+ifelse(!dir.exists(file.path('../data', 'BIEN-GBIF')), 
+       dir.create(file.path('../data', 'BIEN-GBIF')), FALSE)
+st_write(consensus, file.path('../data', 'BIEN-GBIF', 'BIEN-GBIF_cleaned.shp'), append = F)
+
+rm(gbif_recs, dupe_dropper, bien, gbif, gbif_sub, bien_recs, gbif_out)
+```
+
+
+```{r include species occurrence records from BLM scouting work to dataset}
 
 ```
 
