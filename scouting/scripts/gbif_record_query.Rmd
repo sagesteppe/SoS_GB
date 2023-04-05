@@ -1,0 +1,134 @@
+---
+title: "gather and clean records from GBIF"
+author: "steppe"
+date: "2023-04-05"
+output: pdf_document
+---
+
+Here we are going to query all of our target species to download occurrence records 
+from biodiversity aggregation websites. 
+
+```{r load libraries}
+library(tidyverse)
+library(sf)
+library(rgbif)
+library(BIEN)
+library(nngeo)
+```
+
+
+```{r import species of interest}
+p <- '../data'
+f <- list.files(p)
+
+target_taxa <- read.csv(file.path(p, f[grep('taxa', f)])) %>% 
+  pull(Species)
+
+```
+
+
+```{r make gbif query, eval = F}
+user <- "steppe" # your gbif.org username 
+pwd <- "blmquery" # your gbif.org password # this one is now old and serves as an example
+email <- "reedbenkendorf27@gmail.com" # your email 
+
+gbif_taxon_keys <- target_taxa %>% 
+  name_backbone_checklist()  %>% 
+  filter(!matchType == "NONE") %>% 
+  pull(usageKey)
+
+gbif_taxon_keys
+dl_key <- occ_download(
+  pred_in("taxonKey", gbif_taxon_keys),
+  user=user, pwd=pwd, email=email,
+  pred("country", "US"),
+  pred("hasCoordinate", TRUE),
+  pred("hasGeospatialIssue", FALSE),
+  pred_gte("year", 1900)
+)
+
+occ_download_wait('0145828-230224095556074')
+
+d <- occ_download_get( dl_key ) %>%
+    occ_download_import()
+
+# these data were then downloaded via the GUI to a folder on lightscape and
+# copied over onto the drive. 
+# The column fields do not match very well, and you may need to load it in a
+# spreadsheet manager such as the open source (free) libre calc
+
+rm(user, pwd, email, d, gbif_taxon_keys, dl_key)
+```
+
+gbif citation: GBIF.org (05 April 2023) GBIF Occurrence Download https://doi.org/10.15468/dl.5cwpam
+
+```{r import analytical area for modelling}
+
+p <- '../../geodata'
+f <- list.files(p, recursive = T, pattern = 'shp$')
+
+field_off <- st_read(file.path(p, f[grep('GRT', f)]), quiet = T) %>% 
+  st_union() %>% 
+  st_as_sf() %>% 
+  st_transform(5070)
+
+field_off <- nngeo::st_remove_holes(field_off)
+field_off <- st_buffer(field_off, dist = 50000)
+field_off <- st_convex_hull(field_off)
+
+```
+
+
+```{r clean gbif records to the extent of study area, eval = F}
+
+spp_occ <- read.delim(
+  file.path(p, 
+            list.files(p, recursive = T, pattern = 'occurrence.txt')),
+  sep="\t",  header=TRUE, stringsAsFactors=FALSE, quote=""
+  )[, c('gbifID', 'publisher', 'basisOfRecord', 'recordedBy', 
+        'recordNumber', 'occurrenceStatus', 'month', 
+        'day', 'year', 'continent', 'decimalLatitude', 'decimalLongitude', 
+        'coordinateUncertaintyInMeters', 'taxonID', 'acceptedNameUsageID',
+        'acceptedScientificName', 'order', 'family', 'genus', 'species', 'specificEpithet',
+        'infraspecificEpithet', 'acceptedTaxonKey', 'taxonRank', 'verbatimScientificName'
+        )] %>% 
+  filter(occurrenceStatus == 'PRESENT', year >= 1900, 
+         coordinateUncertaintyInMeters < 250, continent != 'OCEANIA') %>% 
+  mutate(across(where(is.character), ~ na_if(.x, ''))) %>% 
+  drop_na(specificEpithet) %>% 
+  distinct(decimalLongitude, decimalLatitude, species, .keep_all = TRUE) %>% 
+  st_as_sf(coords = c('decimalLongitude', 'decimalLatitude'), crs = 4326)
+
+spp_occ <- spp_occ[
+  st_covered_by(spp_occ, st_transform(field_off, st_crs(spp_occ))) %>% 
+    lengths > 0,]
+
+lkp_tab <- read.csv('../data/gbif_synonym_lkp.csv') %>% 
+  rename(species_old = gbif, species = local_use)
+
+syn <- spp_occ %>% 
+  filter(!species %in% target_taxa) %>% 
+  left_join(., lkp_tab, by = c('species' = 'species_old') ) %>% 
+  select(-species, species = species.y) %>% 
+  separate(species, into = c('genus', 'SpecificEpithet'), sep = " ", remove = F)
+
+spp_occ <- bind_rows(spp_occ %>% 
+  filter(species %in% target_taxa), syn) %>% 
+  select(-gbifID, -publisher, -basisOfRecord)
+
+ifelse(!dir.exists(file.path('../data', 'GBIF')), 
+       dir.create(file.path('../data', 'GBIF')), FALSE)
+st_write(spp_occ, file.path('../data', 'GBIF', 'GBIF_cleaned.shp'), append = F)
+
+rm(syn, lkp_tab)
+```
+
+
+```{r download bien records for study area}
+
+bien_dl <- lapply(target_taxa, BIEN_occurrence_species,
+                  new.world = T, observation.type = T,  collection.info = T, 
+                  only.geovalid = T)
+
+```
+
