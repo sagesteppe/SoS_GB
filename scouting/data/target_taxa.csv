@@ -1,0 +1,57 @@
+Research target,Universal target (23),Genetic Tissue Target (8),Cedar City Target (15),West Desert DO,EKDO Target (19),BMDO Target (14),Burns/Vale Target (19),Boise Target (19),Group,Species,common name,USDA Code,Family,MAX # / crew
+X,X,X,,,,,,,Forb,Lomatium dissectum,fernleaf biscuitroot,LODI,Apiaceae,2
+,X,,,,,,,,Forb,Lomatium nudicaule,barestem biscuitroot,LONU2,Apiaceae,2
+,,,,,X,,X,X,Forb,Lomatium triternatum,nineleaf biscuitroot,LOTR2,Apiaceae,3
+,X,,,,,,,,Forb,Asclepias speciosa,showy milkweed,ASSP,Asclepiadaceae,2
+,,,,,,X,,,Forb,Asclepias fascicularis,Mexican whorled milkweed,ASFA,Asclepiadaceae,2
+X,X,,,,,,,,Forb,Agoseris glauca,pale agoseris,AGGL,Asteraceae,1
+,X,,,,,,,,Forb,Balsamorhiza sagittata,arrowleaf balsamroot,BASA3,Asteraceae,3
+,X,,,,,,,,Forb,Chaenactis douglasii,Douglas’ dustymaidens,CHDO,Asteraceae,3
+,X,,,,,,,,Forb,Crepis acuminata,tapertip hawksbeard,CRAC2,Asteraceae,2
+,X,,,,,,,,Forb,Dieteria canescens,hoary tansyaster,MACA2,Asteraceae,4
+,,,,,X,X,X,X,Forb,Erigeron bloomeri,scabland fleabane,ERBL,Asteraceae,1
+,,,X,,X,,X,X,Forb,Balsamorhiza hookeri,Hooker's balsamroot,BAHO,Asteraceae,3
+,,,X,,X,,X,X,Forb,Crepis occidentalis,largeflower hawksbeard,CROC,Asteraceae,2
+X,,,X,,X,,X,X,Forb,Erigeron speciosus,aspen fleabane,ERSP4,Asteraceae,1
+X,,,,,X,,X,X,Forb,Erigeron linearis,desert yellow fleabane,ERLI,Asteraceae,1
+,,,,,X,,X,X,Forb,Erigeron pumilus,shaggy fleabane,ERPU2,Asteraceae,1
+,,,,,X,,X,X,Forb,Nothocalais troximoides,sagebrush false dandelion,NOTR2,Asteraceae,2
+,,,X,,,X,,,Forb,Heliomeris multiflora,showy goldeneye,HEMU3,Asteraceae,2
+X,,,,,,X,,,Forb,Agoseris grandiflora,bigflower agoseris,AGGR,Asteraceae,1
+,X,,,,,,,,Forb,Phacelia hastata,silverleaf phacelia,PHHA,Boraginaceae,1
+X,,,X,,X,X,,,Forb,Peritoma lutea,yellow spiderflower,CLLU2,Capparaceae,4
+,,,,,X,X,X,X,Forb,Astragalus filipes,basalt milkvetch,ASFI,Fabaceae,1
+,,,,,,,X,X,Forb,Astragalus eremiticus ,hermit milkvetch,ASER4,Fabaceae,1
+X,,,,,X,,X,X,Forb,Dalea ornata,blue mountain prairie clover,DAOR2,Fabaceae,2
+,,,X,,,X,,,Forb,Dalea searlsiae,Searls' prairie clover,DASE3,Fabaceae,2
+X,X,,,,,,,,Forb,Sphaeralcea grossulariifolia,gooseberryleaf globemallow,SPGR2,Malvaceae,3
+,X,,,,,,,,Forb,Sphaeralcea munroana,Munro's globemallow,SPMU2,Malvaceae,3
+X,,,X,,,X,,,Forb,Sphaeralcea ambigua,desert globemallow,SPAM2,Malvaceae,3
+,,,X,,,,,,Forb,Sphaeralcea coccinea,scarlet globemallow,SPCO,Malvaceae,3
+,X,,,,,,,,Grass,Achnatherum lettermanii,Letterman's needlegrass,ACLE9,Poaceae,1
+,X,,,,,,,,Grass,Achnatherum nevadense,Nevada needlegrass,ACNE10,Poaceae,1
+,X,,,,,,,,Grass,Achnatherum occidentale,western needlegrass,ACOC3,Poaceae,1
+,X,X,,,,,,,Grass,Achnatherum thurberianum,Thurber’s needlegrass,ACTH7,Poaceae,3
+,X,,,,,,,,Grass,Achnatherum webberi,Webber needlegrass,ACWE3,Poaceae,1
+,X,X,,,,,,,Grass,Elymus elymoides,squirreltail,ELEL5,Poaceae,6
+,X,X,,,,,,,Grass,Acnatherum hymenoides,indian ricegrass ,ACHY,Poaceae,5
+X,X,,,,,,,,Grass,Hesperostipa comata,needle and thread grass,HECO26,Poaceae,1
+,X,X,,,,,,,Grass,Poa secunda,Sandberg’s bluegrass,POSE,Poaceae,6
+,X,,,,,,,,Grass,Pseudoroegneria spicata,bluebunch wheatgrass,PSSP6,Poaceae,5
+,,,,,X,,X,X,Grass,Achnatherum lemmonii,Lemmon's needlegrass,ACLE8,Poaceae,1
+,,,,,X,,X,X,Grass,Festuca idahoensis,Idaho fescue,FEID,Poaceae,3
+,,,,,X,,X,X,Grass,Koeleria macrantha,junegrass,KOMA,Poaceae,2
+,,,X,,,X,,,Grass,Achnatherum speciosum,desert needlegrass,ACSP12,Poaceae,1
+,,,X,,,X,,,Grass,Pleuraphis jamesii,James' galleta,PLJA,Poaceae,1
+X,,,X,,,X,,,Grass,Sporobolus cryptandrus,sand dropseed,SPCR,Poaceae,1
+X,,X,,,,,,,Grass,Leymus cinereus,Great Basin wildrye,LECI4,Poaceae,n/a
+,X,,,,,,,,Forb,Eriogonum ovalifolium,cushion buckwheat,EROV,Polygonaceae,2
+X,X,X,,,,,,,Forb,Eriogonum umbellatum,sulphur-flower buckwheat,ERUM,Polygonaceae,2
+,,,X,,X,,X,X,Forb,Eriogonum heracleoides,parsnipflower buckwheat,ERHE2,Polygonaceae,2
+,,,,,X,X,X,X,Forb,Penstemon deustus,scabland penstemon,PEDE4,Scrophulariaceae,2
+X,,X,,,X,X,X,X,Forb,Penstemon speciosus,royal penstemon,PESP,Scrophulariaceae,2
+,,,,,,,X,X,Forb,Penstemon acuminatus,sharpleaf penstemon,PEAC,Scrophulariaceae,2
+,,,X,,,X,,,Forb,Penstemon palmeri,Palmer's penstemon,PEPA8,Scrophulariaceae,2
+,,,X,,X,,,,Forb,Penstemon eatonii,firecracker penstemon,PEEA,Scrophulariaceae,2
+,,,X,,X,,,,Forb,Penstemon pachyphyllus,thickleaf beardtongue,PEPA6,Scrophulariaceae,2
+,,,,,,,X,,Shrub,Artemisia tridentata,big sagebrush,,,
