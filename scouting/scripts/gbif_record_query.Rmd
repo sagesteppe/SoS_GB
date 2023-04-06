@@ -153,12 +153,13 @@ rm(bien_dl, bien_stuff)
 ```
 
 
-```{r identify distinct records between gbif and bien}
+```{r identify distinct records between gbif and bien, eval = F}
 
 bien <- st_read(file.path('../data', 'BIEN', 'BIEN_cleaned.shp'), quiet = T)
 gbif <- st_read(file.path('../data', 'GBIF', 'GBIF_cleaned.shp'), quiet = T)
 
 bien <- bien %>% 
+  st_transform(26911) %>% 
   arrange(scrbb__) 
 bien_recs <- bien %>% 
   group_by(scrbb__) %>% 
@@ -166,6 +167,7 @@ bien_recs <- bien %>%
 names(bien_recs) <- unique(bien$scrbb__)
 
 gbif_sub <- gbif %>% 
+  st_transform(26911) %>% 
   arrange(species)  %>% 
   filter(species != 'Astragalus eremiticus')
 gbif_recs <- gbif_sub %>% 
@@ -192,11 +194,118 @@ ifelse(!dir.exists(file.path('../data', 'BIEN-GBIF')),
        dir.create(file.path('../data', 'BIEN-GBIF')), FALSE)
 st_write(consensus, file.path('../data', 'BIEN-GBIF', 'BIEN-GBIF_cleaned.shp'), append = F)
 
-rm(gbif_recs, dupe_dropper, bien, gbif, gbif_sub, bien_recs, gbif_out)
+rm(gbif_recs, bien, gbif, gbif_sub, bien_recs, gbif_out)
 ```
 
 
 ```{r include species occurrence records from BLM scouting work to dataset}
 
+target_taxa_lkp <- read.csv(file.path(p, f[grep('taxa', f)])) %>% 
+  select(species = Species, USDA.Code)
+
+hist_scout <- st_read(
+  file.path('../data', list.files(
+    '../data', recursive = T, pattern = 'Scouting.*shp')), quiet = T) %>% 
+  select(USDA.Code = ABBREV_NAM) %>% 
+  right_join(., target_taxa_lkp, by = 'USDA.Code') %>% 
+  select(species)%>% 
+  filter(!st_is_empty(.)) %>% 
+  st_transform(26911)
+
+hist_coll <- read.csv(
+  file.path('../../Historic_SOS_Collections/Historic_SOS_Collections_GreatBasin_0.csv')) %>% 
+  select(species = NAME, x, y) %>% 
+  st_as_sf(coords = c('x', 'y'), crs = 4269) %>% 
+  filter(species %in% target_taxa) %>% 
+  filter(!st_is_empty(.)) %>% 
+  st_transform(26911)
+
+hist_scout <- hist_scout %>% 
+  arrange(species) 
+scout_recs <- hist_scout %>% 
+  group_by(species) %>% 
+  group_split()
+names(scout_recs) <- unique(hist_scout$species)
+
+hist_coll <- hist_coll %>% 
+  arrange(species)
+coll_recs <- hist_coll %>% 
+  group_by(species) %>% 
+  group_split()
+names(coll_recs) <- unique(hist_coll$species)
+
+coll_recs_sub <- coll_recs[names(coll_recs) %in% names(scout_recs)]
+scout_recs_sub <- scout_recs[names(scout_recs) %in% names(coll_recs)]
+
+only_one_set <- c(names(coll_recs)[!names(coll_recs) %in% names(scout_recs)],
+                  names(scout_recs)[!names(scout_recs) %in% names(coll_recs)] )
+
+coll_recs_out <- mapply(dupe_dropper, x = coll_recs_sub, y = scout_recs_sub, dist_thresh = 1000, 
+               SIMPLIFY = FALSE) %>% 
+  bind_rows()
+
+single_set_species <- bind_rows(
+    hist_coll %>% 
+      filter(species %in% only_one_set),
+    hist_scout %>% 
+      filter(species %in% only_one_set)
+)
+
+hist_data <- bind_rows(coll_recs_out, hist_scout, single_set_species) %>% 
+  arrange(species) 
+
+rm(target_taxa_lkp, hist_coll, hist_scout, scout_recs_sub, coll_recs_sub, 
+   scout_recs, coll_recs, coll_recs_out, single_set_species, only_one_set)
+```
+
+
+```{r combine all data for training sets}
+
+gbif_bien <- st_read(file.path('../data', 'BIEN-GBIF', 'BIEN-GBIF_cleaned.shp'))
+
+gb_recs <- gbif_bien %>% 
+  group_by(species) %>% 
+  group_split()
+names(gb_recs) <- unique(gbif_bien$species)
+
+hist_coll <- hist_data %>% 
+  arrange(species)
+coll_recs <- hist_coll %>% 
+  group_by(species) %>% 
+  group_split()
+names(coll_recs) <- unique(hist_data$species)
+
+gb_recs_sub <- gb_recs[names(gb_recs) %in% names(coll_recs)]
+coll_recs_sub <- coll_recs[names(coll_recs) %in% names(gb_recs)]
+
+only_one_set <- c(names(coll_recs)[!names(gb_recs) %in% names(coll_recs)],
+                  names(gb_recs)[!names(coll_recs) %in% names(gb_recs)] )
+
+coll_out <- mapply(dupe_dropper, x = coll_recs_sub, y = gb_recs_sub, dist_thresh = 1000, 
+               SIMPLIFY = FALSE) %>% 
+  bind_rows()
+
+single_set_species <- bind_rows(
+    hist_coll %>% 
+      filter(species %in% only_one_set),
+    gbif_bien %>% 
+      filter(species %in% only_one_set)
+)
+
+hist_data <- bind_rows(coll_out, gbif_bien, single_set_species) %>% 
+  arrange(species) %>% 
+  relocate(date:year, .before = geometry)
+
+ifelse(!dir.exists(file.path('../data', 'SDM-occ')), 
+       dir.create(file.path('../data', 'SDM-occ')), FALSE)
+st_write(hist_data, file.path('../data', 'SDM-occ', 'SDM-occ.shp'), append = F)
+
+
+rm(single_set_species, only_one_set, coll_recs_out, coll_recs_sub, gb_recs_sub, 
+   hist_coll, coll_recs, coll_out, conc_out, gb_recs, gbif_bien, hist_sub, hist_data)
+```
+
+```{r clean environment}
+rm(hist_data, f, p, target_taxa, dupe_dropper)
 ```
 
