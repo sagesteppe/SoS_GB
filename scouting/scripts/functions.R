@@ -23,3 +23,44 @@ dupe_dropper <- function(x, y, dist_thresh){
   return(x_out)
   
 }
+
+
+#' generate and ensemble species distribution models here
+#' 
+#' Use this function to generate weighted Random Forest, Boosted Regression Trees, 
+#' and weighted Support Vector Machine models of probability of suitable habitat.
+
+Machine_SDM <- function(x){
+  
+  binomial <-  x$binomial[1]
+  taxon <- x %>% 
+    mutate(occurrence = case_when(occurrence == 2 | occurrence == 1 ~ 1,
+                                  occurrence == 0 ~ 0)) %>% 
+    dplyr::select(occurrence) %>% 
+    as(., "Spatial")
+  taxon = spTransform(taxon,geo_proj)
+  
+  sdm_data_obj <- sdmData(formula = occurrence~., 
+                          train = taxon, 
+                          predictors = WPDPV2)
+  sdm_model <- sdm(
+    formula = occurrence ~ .,  data = sdm_data_obj, 
+    methods = c('rf', 'brt', 'svm'), replication = 'sub', 
+    test.percent = 30, n = 5)
+  
+  fname <- paste0('../results/maps/', binomial, Sys.time(),'.tif')
+  fname <- gsub(' ', '_', fname)
+  
+  sdm_ensemble_prediction <- sdm::ensemble(
+    sdm_model, WPDPV2, 
+    setting = list(method = "weighted", stat = 'tss', opt = 2), 
+    filename = fname)
+  
+  fname <- paste0('../results/stats/', binomial, Sys.time(),'.csv')
+  fname <- gsub(' ', '_', fname)
+  evaluation <- getEvaluation(
+    sdm_model, stat=c('TSS','Kappa','AUC'), wtest=c('training','test'), opt = 1)
+  write.csv(evaluation, file = fname)
+  
+}
+
