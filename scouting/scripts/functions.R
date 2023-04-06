@@ -64,3 +64,42 @@ Machine_SDM <- function(x){
   
 }
 
+#' erase one geometry from another
+st_erase = function(x, y) st_difference(x, st_union(y))
+
+#' draw an equal number of absences to presences to SDMs
+#' 
+#' use this function to draw an equal number of absences as presences for 
+#' species distribution modelling. Submit a polygon in planar coordinates which
+#' specifies the extent of the area, and an offset distance from each presence
+#' record which the closest absence can be located in
+#' @param polyg spatial extent to perform sampling in
+#' @param occurrences occurrence records to be used for modelling
+#' @param dist minimum distance an absence records can be relative to an occurrence, 
+#' @param species the name of the column holding species data
+#' if missing defaults to 100 meters
+
+random_draw <- function(occurrences, polyg, dist, species){
+  
+  if(missing(dist)){dist = 100}
+  if(st_crs(polyg) != st_crs(occurrences)){polyg <- st_transform(polyg, st_crs(occurrences))}
+  species <- enquo(species)
+  
+  taxon <- pull(occurrences, !!species)[1]
+  
+  
+  occ_buff <- sf::st_buffer(occurrences, dist) 
+  polyg <- st_erase(polyg, occ_buff)
+  
+  absences <- sf::st_sample(polyg, occ_buff, size = nrow(occurrences)) %>% 
+    sf::st_as_sf() |>
+    dplyr::rename(geometry = x) |>
+    dplyr::mutate(Occurrence = 0, !!species := taxon,
+                  .before = geometry)
+  
+  results <- dplyr::bind_rows(absences, occurrences |>
+                                dplyr::mutate(Occurrence = 1, .before = geometry) )
+  
+  return(results)
+  
+}

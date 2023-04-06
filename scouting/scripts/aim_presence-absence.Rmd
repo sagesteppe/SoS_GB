@@ -9,6 +9,8 @@ output: html_document
 library(sf)
 library(tidyverse)
 
+set.seed(28)
+
 p <- '../data'
 f <- list.files(p)
 ```
@@ -23,6 +25,30 @@ target_taxa_lkp <- read.csv(file.path(p, f[grep('taxa', f)])) %>%
 
 ```
 
+```{r import analytical area for modelling}
+
+p <- '../../geodata'
+f <- list.files(p, recursive = T, pattern = 'shp$')
+
+field_off <- st_read(file.path(p, f[grep('GRT', f)]), quiet = T) %>% 
+  st_union() %>% 
+  st_as_sf() %>% 
+  st_transform(5070)
+
+field_off <- nngeo::st_remove_holes(field_off)
+field_off <- st_buffer(field_off, dist = 50000)
+field_off <- st_convex_hull(field_off)
+```
+
+```{r Draw random absences}
+
+pub_presence_l <- split(pub_presence, f = pub_presence$species)
+field_off <- st_transform(field_off, st_crs(acle))
+
+records <- lapply(pub_presence_l, random_draw, polyg = field_off, dist = 10000, 
+                  species = species)
+
+```
 
 
 ```{r load and subset AIM data}
