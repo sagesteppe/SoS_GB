@@ -40,6 +40,88 @@ field_off <- st_buffer(field_off, dist = 50000)
 field_off <- st_convex_hull(field_off)
 ```
 
+```{r load and subset AIM data}
+
+file.path(p, list.files(p, pattern = 'gdb$', recursive = T))
+# for some strange reason this not exactly working! a weird /gdb is being tagged
+# onto the end of it... we can manually specify the data beneath
+st_layers(dsn = '../../geodata/2021_AIM_Terrestrial/AIMTerrestrial9-1-22.gdb')
+
+AIM_points <- st_read(dsn = '../../geodata/2021_AIM_Terrestrial/AIMTerrestrial9-1-22.gdb', 
+        layer = 'TerrADat', quiet = T) %>%
+  filter(State %in% c('NV', 'OR', 'CA', 'ID', 'UT')) %>% 
+  select(PrimaryKey, geometry = Shape) %>% 
+  st_transform(5070) 
+
+AIM_points <- AIM_points[st_covered_by(AIM_points, field_off) %>% lengths > 0,]
+
+spp_richness <- st_read(dsn = '../../geodata/2021_AIM_Terrestrial/AIMTerrestrial9-1-22.gdb', 
+        layer = 'tblSpecRichDetail', quiet = T) %>% 
+  select(SpeciesList, PrimaryKey) %>% 
+  right_join(AIM_points, by = 'PrimaryKey')
+
+```
+
+
+```{r pull out additional presences from AIM}
+
+spp_found <- inner_join(target_taxa_lkp, spp_richness, 
+                        by = c('USDA.Code' = 'SpeciesList')) %>% 
+  select(species, PrimaryKey)
+
+spp_occurrences <- bind_rows(spp_found, pub_presence) %>% 
+  arrange(species) %>% 
+  relocate(c('year', 'date'), .before = geometry) %>% 
+  mutate(species = str_trim(species)) %>% 
+  filter(species != 'Artemisia tridentata')
+
+spp_occurrences <- spp_occurrences %>% distinct(species, geometry, .keep_all = T)
+
+st_write(spp_occurrences, '../data/SDM-occ/SDM-occ.shp', quiet = T, append = F) 
+
+rm(spp_found, pub_presence, spp_found)
+```
+
+
+```{r determine how many records to come from BLM land}
+
+blm <- st_read(dsn = '../../geodata/SMA_WM.gdb', layer = 'SurfaceMgtAgy_BLM', 
+               quiet = T) %>% 
+  filter(ADMIN_ST %in% c('CA', 'NV', 'OR', 'ID', 'UT')) %>% 
+  select(ADMIN_UNIT_NAME) %>% 
+  st_zm(drop = TRUE, what = "ZM") %>% 
+  st_cast(to = "MULTIPOLYGON") %>% 
+  st_make_valid() %>% 
+  st_simplify(dTolerance = 100)
+
+fo <- st_transform(field_off, st_crs(blm))
+
+blm <-  st_intersection(blm, fo)
+
+prop_blm <- round( as.numeric(sum(st_area(blm1))) / 
+                    as.numeric(st_area(fo)), 2 )
+
+rm(fo)
+```
+
+
+
+```{r generate absences from AIM plots}
+prop_blm <- 0.41 # made up number
+
+splicies <- split(spp_occurrences, f = spp_occurrences$species)
+
+out <- lapply(splicies[1:5], true_absence_ML) %>% 
+  bind_rows
+
+acle <- out[[1]] %>% st_as_sf()
+
+ggplot(acle) +
+  geom_sf(aes(color = Occurrence))
+
+```
+
+
 ```{r Draw random absences}
 
 pub_presence_l <- split(pub_presence, f = pub_presence$species)
@@ -50,11 +132,5 @@ records <- lapply(pub_presence_l, random_draw, polyg = field_off, dist = 10000,
 
 ```
 
-
-```{r load and subset AIM data}
-st_layers('../../AIM/AIM.gdb')
-
-st_read()
-```
 
 

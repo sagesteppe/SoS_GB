@@ -26,8 +26,6 @@ WPDPV <- WPDPV[[c(1:10, # remove epa level-3 and freshwater ecoregions
 
 ```{r Import Species Records}
 
-
-
 ```
 
 

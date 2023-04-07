@@ -103,3 +103,28 @@ random_draw <- function(occurrences, polyg, dist, species){
   return(results)
   
 }
+
+
+###################
+# TRUE ABSENCE ML #
+###################
+
+true_absence_ML <- function(x){ # for collecting true absence records from BLM land. 
+  
+  taxon <- x$species[1]
+  no_record <- nrow(x)
+  
+  TA_req <- round((no_record * prop_blm)*1.2, 0) # how many true absences needed? # buffered for NA cells
+  presence_PK <- x %>% pull(PrimaryKey) # which plots can absences not occur in because a presence is there?
+  
+  AIM_absence <- AIM_points %>% # remove plots with an occurrence of the taxon. 
+    filter(!PrimaryKey %in% presence_PK)  %>% # make sure the plot does not have a presence record
+    mutate(species = taxon,
+           Occurrence = 0)
+  
+  AIM_absence <- AIM_absence[sample(1:nrow(AIM_absence), size = TA_req, replace = F),]
+  
+  out <- bind_rows(x %>% 
+                     mutate(Occurrence = 1, .before = geometry), AIM_absence)
+  return(out)
+}
