@@ -200,6 +200,9 @@ rm(gbif_recs, bien, gbif, gbif_sub, bien_recs, gbif_out)
 
 ```{r include species occurrence records from BLM scouting work to dataset}
 
+p <- '../data'
+f <- list.files(p, recursive = T)
+
 target_taxa_lkp <- read.csv(file.path(p, f[grep('taxa', f)])) %>% 
   select(species = Species, USDA.Code)
 
@@ -299,7 +302,6 @@ hist_data <- bind_rows(coll_out, gbif_bien, single_set_species) %>%
 ifelse(!dir.exists(file.path('../data', 'SDM-occ')), 
        dir.create(file.path('../data', 'SDM-occ')), FALSE)
 st_write(hist_data, file.path('../data', 'SDM-occ', 'SDM-occ.shp'), append = F)
-
 
 rm(single_set_species, only_one_set, coll_recs_out, coll_recs_sub, gb_recs_sub, 
    hist_coll, coll_recs, coll_out, conc_out, gb_recs, gbif_bien, hist_sub, hist_data)

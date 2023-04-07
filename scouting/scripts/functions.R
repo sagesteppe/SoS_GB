@@ -85,21 +85,21 @@ random_draw <- function(occurrences, polyg, dist, species){
   if(st_crs(polyg) != st_crs(occurrences)){polyg <- st_transform(polyg, st_crs(occurrences))}
   species <- enquo(species)
   
+  presences <- nrow(occurrences[occurrences$Occurrence == 1,])
+  abs_need <- nrow(occurrences) - presences
   taxon <- pull(occurrences, !!species)[1]
   
-  
-  occ_buff <- sf::st_buffer(occurrences, dist) 
-  polyg <- st_erase(polyg, occ_buff)
-  
-  absences <- sf::st_sample(polyg, occ_buff, size = nrow(occurrences)) %>% 
+  absences <- sf::st_sample(polyg, size = round(nrow(occurrences) * 1.5), 0) |>
     sf::st_as_sf() |>
-    dplyr::rename(geometry = x) |>
+    dplyr::rename(geometry = x) 
+  absences <- absences[st_is_within_distance(absences, occurrences, dist = 10000) %>% lengths == 0,]
+  absences <- absences[sample(nrow(absences), size = abs_need, replace = F),]
+  
+  absences <- absences |>
     dplyr::mutate(Occurrence = 0, !!species := taxon,
                   .before = geometry)
   
-  results <- dplyr::bind_rows(absences, occurrences |>
-                                dplyr::mutate(Occurrence = 1, .before = geometry) )
-  
+  results <- dplyr::bind_rows(occurrences, absences)
   return(results)
   
 }
@@ -120,11 +120,12 @@ true_absence_ML <- function(x){ # for collecting true absence records from BLM l
   AIM_absence <- AIM_points %>% # remove plots with an occurrence of the taxon. 
     filter(!PrimaryKey %in% presence_PK)  %>% # make sure the plot does not have a presence record
     mutate(species = taxon,
-           Occurrence = 0)
+           Occurrence = 0, .before = geometry)
   
   AIM_absence <- AIM_absence[sample(1:nrow(AIM_absence), size = TA_req, replace = F),]
   
   out <- bind_rows(x %>% 
-                     mutate(Occurrence = 1, .before = geometry), AIM_absence)
+                     mutate(Occurrence = 1, .before = geometry), AIM_absence) %>% 
+    st_as_sf()
   return(out)
 }

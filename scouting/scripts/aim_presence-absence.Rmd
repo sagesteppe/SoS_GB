@@ -8,6 +8,7 @@ output: html_document
 ```{r}
 library(sf)
 library(tidyverse)
+source('functions.R')
 
 set.seed(28)
 
@@ -18,7 +19,8 @@ f <- list.files(p)
 
 ```{r load in existing presences}
 
-pub_presence <- st_read('../data/SDM-occ/SDM-occ.shp', quiet = T)
+pub_presence <- st_read('../data/SDM-occ/SDM-occ.shp', quiet = T) %>% 
+  st_transform(5070)
 
 target_taxa_lkp <- read.csv(file.path(p, f[grep('taxa', f)])) %>% 
   select(species = Species, USDA.Code)
@@ -67,17 +69,18 @@ spp_richness <- st_read(dsn = '../../geodata/2021_AIM_Terrestrial/AIMTerrestrial
 
 spp_found <- inner_join(target_taxa_lkp, spp_richness, 
                         by = c('USDA.Code' = 'SpeciesList')) %>% 
-  select(species, PrimaryKey)
+  select(species, PrimaryKey, geometry) %>% 
+  st_as_sf()
 
 spp_occurrences <- bind_rows(spp_found, pub_presence) %>% 
   arrange(species) %>% 
   relocate(c('year', 'date'), .before = geometry) %>% 
   mutate(species = str_trim(species)) %>% 
-  filter(species != 'Artemisia tridentata')
+  filter(!species %in% c('Artemisia tridentata',
+                         'Elymus elymoides',
+                         'Poa secunda'))
 
-spp_occurrences <- spp_occurrences %>% distinct(species, geometry, .keep_all = T)
-
-st_write(spp_occurrences, '../data/SDM-occ/SDM-occ.shp', quiet = T, append = F) 
+# st_write(spp_occurrences, '../data/SDM-occ/SDM-occ.shp', quiet = T, append = F) 
 
 rm(spp_found, pub_presence, spp_found)
 ```
@@ -95,42 +98,51 @@ blm <- st_read(dsn = '../../geodata/SMA_WM.gdb', layer = 'SurfaceMgtAgy_BLM',
   st_simplify(dTolerance = 100)
 
 fo <- st_transform(field_off, st_crs(blm))
-
 blm <-  st_intersection(blm, fo)
 
-prop_blm <- round( as.numeric(sum(st_area(blm1))) / 
+prop_blm <- round( as.numeric(sum(st_area(blm))) / 
                     as.numeric(st_area(fo)), 2 )
 
 rm(fo)
 ```
 
 
-
 ```{r generate absences from AIM plots}
-prop_blm <- 0.41 # made up number
 
 splicies <- split(spp_occurrences, f = spp_occurrences$species)
+out <- lapply(splicies, true_absence_ML) %>% 
+  bind_rows() %>% 
+  st_as_sf()
 
-out <- lapply(splicies[1:5], true_absence_ML) %>% 
-  bind_rows
-
-acle <- out[[1]] %>% st_as_sf()
-
-ggplot(acle) +
-  geom_sf(aes(color = Occurrence))
-
+rm(splicies)
 ```
 
 
 ```{r Draw random absences}
 
-pub_presence_l <- split(pub_presence, f = pub_presence$species)
-field_off <- st_transform(field_off, st_crs(acle))
+splicies <- split(out, f = out$species)
 
-records <- lapply(pub_presence_l, random_draw, polyg = field_off, dist = 10000, 
-                  species = species)
+field_off <- st_transform(field_off, st_crs(blm))
+field_off <- st_erase(field_off, blm)
+field_off <- st_transform(field_off, st_crs(out))
+field_off <- st_make_valid(field_off)
 
+records <- lapply(splicies, random_draw, polyg = field_off, dist = 5000, 
+                  species = species) %>% 
+  bind_rows()
+
+rm(out, AIM_points, spp_occurrences, target_taxa_lkp, splicies)
 ```
 
 
+```{r}
+ifelse(!dir.exists(file.path('../data', 'SDM-pres-abs')), 
+       dir.create(file.path('../data', 'SDM-pres-abs')), FALSE)
+st_write(records, '../data/SDM-pres-abs/SDM-SDM-pres-abs.shp', quiet = T, append = F) 
+```
+
+```{r}
+rm(blm, records, spp_richness, dupe_dropper, Machine_SDM, random_draw, st_erase, 
+   true_absence_ML, f, p, prop_blm)
+```
 
