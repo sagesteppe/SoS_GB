@@ -13,6 +13,7 @@ library(sf)
 library(tidyverse)
 library(terra)
 library(spData)
+source('functions.R')
 ```
 
 
@@ -32,11 +33,16 @@ field_off <- st_read(file.path(p, f[grep('GRT', f)]), quiet = T) %>%
 field_off <- nngeo::st_remove_holes(field_off)
 field_off <- st_buffer(field_off, dist = 50000)
 field_off <- st_convex_hull(field_off)
+
+gr <- st_make_grid(field_off, n = c(6,6)) %>% 
+  st_as_sf() %>% 
+  mutate(QUADRAT = paste0(rep(LETTERS[1:6], each = 6), rep(1:6, 6))) %>% 
+  st_intersection(field_off, .)
+  
 ```
 
 we can add more tiles to increase the area of analysis. 
 ```{r}
-data(us_states)
 
 path <- "/hdd/Geospatial_data/Western_Plant_Predictors/SDM_tiles_WNA"
 tile_index <- list.files(path, pattern = ".shp$")
@@ -51,137 +57,61 @@ box <- st_bbox(st_buffer(index, 1000000))
 us_states <- st_transform(us_states ,5070)
 us_states <- st_crop(us_states, box)
 
-
 #png(filename = 'C:/R_datsci_2022/Spatial_lecture_developement/pictures/Western_Plant_Predictors.png', width = 1080, height = 720, units = "px", pointsize = 16)
 ggplot()+
   geom_sf(data = us_states) +
-  geom_sf(data = soro.vec, fill = 'black') +
+  geom_sf(data = field_off, fill = 'black') +
   geom_sf(data = index, aes(fill = tiles), alpha = 0.6) +
   viridis::scale_fill_viridis() +
   theme_bw() +
-  labs(title = 'Western Plant Predictors 32-layer Raster Stack', fill = 'Tile Number') +
+  labs(title = 'Western Plant Predictors 32-layer Stack', fill = 'Tile Number') +
   theme(plot.title = element_text(hjust = 0.5), 
         text = element_text(size=20))
 
 rm(path, tile_index, us_states)
 ```
 
-Looks like we are looking for a subset from around 220 to 400... We will clip out the few Great Plains Occurrence records. 
+Determine which tiles are required for each quadrat 
 ```{r}
-ecoregions <- sf::read_sf("us_eco_l4/us_eco_l4_no_st.shp") %>% 
-  dplyr::select(NA_L3CODE, NA_L3NAME) %>% 
-  filter(NA_L3NAME == 'Southern Rockies') %>% 
-  st_union() %>% 
-  st_transform(32612) %>% 
-  st_as_sf()
 
-buffer_distance <- units::as_units(50, "kilometers") # want to buffer the edges...
-ecoregion_bound <- sf::st_convex_hull(ecoregions)
-ecoregion_bound <- st_buffer(ecoregion_bound, dist = buffer_distance) %>% 
-  st_transform(5070) %>% 
-  st_as_sf() %>% 
-  mutate(data = "1")
-
-index <- st_intersection(ecoregion_bound, index) # clip tiles to ecoregion
-
-index1 <- as.data.frame(st_covered_by(index, soro.vec))
-index1 <- index1[,1]
-index1 <- index1[2:17]
+index <- st_intersection(gr, index) # clip tiles to ecoregion
+index1 <- as.data.frame(st_covered_by(index, field_off))
 
 index <- index %>% mutate(row.num = row_number())
 index <- index %>% 
   filter(!row.num %in% index1)
 
-ggplot(ecoregion_bound) +
-  geom_sf() +
-  geom_sf(data = soro.vec, fill = 'red') +
-  geom_sf(data = index, aes(fill = tiles, alpha = 0.8))
-
-ecoregion_bound <- as(ecoregion_bound, "Spatial")
+# field_off <- as(field_off, "Spatial")
 
 rm(ecoregions, ecoregion_bound, buffer_distance,  index1)
 ```
 
 # Match up the spatial extents of the existing raster and that which we are making.
 
-first we clip the Western Colorado raster to the extent of the index tiles. 
-```{r, eval = F}
-soro <- raster::crop(soro, index)
-```
-
-# Now we can turn our attention back towards bringing in the other rasters. 
-
 We need to re-project the rasters before stacking. 
 ```{r, eval = F}
 files <- index %>% pull(location)
-#newproj <- "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs" 
-#for (i in 1:length(files)){
-#    r <- raster(files[i])
-#    prj <- projectRaster(r, crs=newproj, filename = paste0(files[i]), overwrite=TRUE)
-#}
+newproj <- "epsg:5072" 
+ppred <- '/hdd/Geospatial_data/Western_Plant_Predictors/'
 
-files.list <- as.list(files)
-allrasters <- lapply(files.list, raster::stack)
-wppr <- do.call(merge, allrasters)
+ifelse(!dir.exists(file.path(ppred, 'GreatBasin')), 
+       dir.create(file.path(ppred, 'GreatBasin')), FALSE)
 
-wppr1 <- raster::mask(wppr, ecoregion_bound)
-wppr1 <- raster::crop(wppr1, extent(ecoregion_bound))
-writeRaster(wppr, "L:/geospatial/Western_Plant_Predictors/SoRo_wppr.tif", format="GTiff", overwrite = T)
+splindex <- split(index, index$QUADRAT)
+inner_bounds <- vect(gr) |> project(newproj)
+outer_bounds <- vect(field_off) |> project(newproj)
 
-rm(files.list, wppr, allrasters, files, index)
+lapply(splindex, FUN = import_crop, y = inner_bounds, ppred = '/hdd/Geospatial_data/Western_Plant_Predictors/')
+
+rm(files.list, wppr, allrasters, files, index, splindex)
 ```
 
 
-```{r, eval =F}
-wppr <- raster::stack("L:/geospatial/Western_Plant_Predictors/SoRo_wppr.tif")
-wppr <- raster::crop(wppr, soro.vec)
-wppr <- raster::mask(wppr, soro.vec)
+```{r}
+rasty <- file.path(ppred, 'GreatBasin',
+  list.files(file.path(ppred, 'GreatBasin'))
+)
 
-wppr1 <- merge(wppr, soro)
-```
-
-
-# option 2. Assembling all tiles for the area of analysis. 
-
-```{r, eval = F}
-path <- "L:/geospatial/Western_Plant_Predictors/SDM_tiles_WNA"
-tile_index <- list.files(path, pattern = ".shp$")
-path <- paste0(path, "/")
-index <- sf::st_read(paste0(path, tile_index), quiet = T) %>% 
-  mutate(tiles = str_extract(location, "\\d+")) %>% 
-  mutate(tiles = as.numeric(as.character(tiles))) %>% 
-  st_transform(5070) %>% 
-  mutate(location = str_replace(location, "/Users/ian/GIS/SDM_tiles_WNA/", path))
-
-rm(path, tile_index)
-
-ecoregions <- sf::read_sf("us_eco_l4/us_eco_l4_no_st.shp") %>% 
-  dplyr::select(NA_L3CODE, NA_L3NAME) %>% 
-  filter(NA_L3NAME == 'Southern Rockies') %>% 
-  st_union() %>% 
-  st_transform(32612) %>% 
-  st_as_sf()
-
-buffer_distance <- units::as_units(50, "kilometers") # want to buffer the edges...
-ecoregion_bound <- sf::st_convex_hull(ecoregions)
-ecoregion_bound <- st_buffer(ecoregion_bound, dist = buffer_distance) %>% 
-  st_transform(5070) %>% 
-  st_as_sf() %>% 
-  mutate(data = "1")
-
-index <- st_intersection(ecoregion_bound, index) 
-
-files <- index %>% pull(location)
-files.list <- as.list(files)
-allrasters <- lapply(files.list, raster::stack)
-wppr <- do.call(merge, allrasters)
-
-wppr1 <- raster::mask(wppr, ecoregion_bound)
-wppr1 <- raster::crop(wppr1, extent(ecoregion_bound))
-writeRaster(wppr1, "L:/geospatial/Western_Plant_Predictors/SoRo_wppr_vers_two.tif", format="GTiff", overwrite = T) # CHANGE TO CHECK TO WRITE ME !
-
-check <- raster::stack("L:/geospatial/Western_Plant_Predictors/SoRo_wppr_vers_two.tif")
-
-rm(files.list, wppr, allrasters, files, index, buffer_distance)
+collection <- vrt(rasty)
 ```
 

@@ -1,7 +1,7 @@
 # here we reduced the extent of the geodata to only field offices straddling the
 # great basin ecoregion.
 
-setwd('/media/sagesteppe/ExternalHD/SoS_GB/scouting/scripts')
+setwd('/media/reed/ExternalHD/SoS_GB/scouting/scripts')
 
 library(tidyverse)
 library(sf)
@@ -51,7 +51,8 @@ gb_fo <- bind_rows(
 
 ifelse(!dir.exists(file.path(p, 'ADMU', 'GRT_BASIN')), 
        dir.create(file.path(p, 'ADMU', 'GRT_BASIN')), FALSE)
-st_write(gb_fo, dsn = file.path(p, 'ADMU', 'GRT_BASIN', 'GB_FieldO.shp'))
+st_write(gb_fo, dsn = file.path(p, 'ADMU', 'GRT_BASIN', 'GB_FieldO.shp'),
+         append = F)
 
 rm(admin)
 

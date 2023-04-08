@@ -5,7 +5,25 @@ date: "2023-04-06"
 output: pdf_document
 ---
 
+```{r}
+library(terra)
+library(tidyverse)
+library(sdm)
+library(sf)
+source('functions.R')
+```
+
+
+
 ```{r Import Predictor Stack and reduce to spatial extent of analysis}
+
+ppred <- '/hdd/Geospatial_data/Western_Plant_Predictors/'
+
+WPDPV <- file.path(ppred, 'GreatBasin',
+  list.files(file.path(ppred, 'GreatBasin'))
+)
+
+WPDPV <- vrt(WPDPV)
 
 names_vec <- c('PCL_MAN','PCL_SE1','PCL_SE2','PCL_SE3','PCM_BFP','PCM_CMD',
                   'PCM_DD5', 'PCM_MAP','PCM_PAS','PCM_TD','PCT_ECO','PCT_EFW',
@@ -25,7 +43,7 @@ WPDPV <- WPDPV[[c(1:10, # remove epa level-3 and freshwater ecoregions
 
 
 ```{r Import Species Records}
-
+records <- st_read( '../data/SDM-pres-abs/SDM-SDM-pres-abs.shp', quiet = T) 
 ```
 
 

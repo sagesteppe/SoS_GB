@@ -129,3 +129,31 @@ true_absence_ML <- function(x){ # for collecting true absence records from BLM l
     st_as_sf()
   return(out)
 }
+
+
+#' crop and aggregate rasters for projects
+#' 
+import_crop <- function(x, y, ppred){
+  
+  intermed <- file.path(ppred, "GreatBasin", 
+                        paste0("GreatBasin", x$QUADRAT[1], ".tif"))
+  collection <- sprc(lapply(x$location, rast))
+  mo <- mosaic(collection, filename = intermed)
+  
+  mo <- terra::crop(mo, outer_bounds, mask = T)
+  in_bounds <- y[y$QUADRAT == x$QUADRAT[1],]
+  mo <- terra::crop(mo, gr, mask = T)
+  
+  mo_agg <- aggregate(
+    mo, fact=4, cores = parallel::detectCores(), filename =
+      file.path(ppred, "GreatBasin",
+                paste0("GreatBasin", x$QUADRAT[1], "-agg.tif")))
+  
+  if (file.exists(intermed)) {
+    file.remove(intermed)
+    message(paste0("Intermediate mosaic deleted and replaced by final aggregated dataset, Quadrat:",  x$QUADRAT[1]))
+  }
+  
+  gc()
+  
+}
