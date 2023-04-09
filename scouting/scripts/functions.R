@@ -24,46 +24,6 @@ dupe_dropper <- function(x, y, dist_thresh){
   
 }
 
-
-#' generate and ensemble species distribution models here
-#' 
-#' Use this function to generate weighted Random Forest, Boosted Regression Trees, 
-#' and weighted Support Vector Machine models of probability of suitable habitat.
-
-Machine_SDM <- function(x){
-  
-  binomial <-  x$binomial[1]
-  taxon <- x %>% 
-    mutate(occurrence = case_when(occurrence == 2 | occurrence == 1 ~ 1,
-                                  occurrence == 0 ~ 0)) %>% 
-    dplyr::select(occurrence) %>% 
-    as(., "Spatial")
-  taxon = spTransform(taxon,geo_proj)
-  
-  sdm_data_obj <- sdmData(formula = occurrence~., 
-                          train = taxon, 
-                          predictors = WPDPV2)
-  sdm_model <- sdm(
-    formula = occurrence ~ .,  data = sdm_data_obj, 
-    methods = c('rf', 'brt', 'svm'), replication = 'sub', 
-    test.percent = 30, n = 5)
-  
-  fname <- paste0('../results/maps/', binomial, Sys.time(),'.tif')
-  fname <- gsub(' ', '_', fname)
-  
-  sdm_ensemble_prediction <- sdm::ensemble(
-    sdm_model, WPDPV2, 
-    setting = list(method = "weighted", stat = 'tss', opt = 2), 
-    filename = fname)
-  
-  fname <- paste0('../results/stats/', binomial, Sys.time(),'.csv')
-  fname <- gsub(' ', '_', fname)
-  evaluation <- getEvaluation(
-    sdm_model, stat=c('TSS','Kappa','AUC'), wtest=c('training','test'), opt = 1)
-  write.csv(evaluation, file = fname)
-  
-}
-
 #' erase one geometry from another
 st_erase = function(x, y) st_difference(x, st_union(y))
 
@@ -140,14 +100,17 @@ import_crop <- function(x, y, ppred){
   collection <- sprc(lapply(x$location, rast))
   mo <- mosaic(collection, filename = intermed)
   
+  mo <- mo[[c(1:10, 13:14, 16:20, 22:26, 28, 31:32)]]
+  
   mo <- terra::crop(mo, outer_bounds, mask = T)
   in_bounds <- y[y$QUADRAT == x$QUADRAT[1],]
   mo <- terra::crop(mo, gr, mask = T)
   
   mo_agg <- aggregate(
-    mo, fact=4, cores = parallel::detectCores(), filename =
+    mo, fact=9, cores = parallel::detectCores(), filename =
       file.path(ppred, "GreatBasin",
                 paste0("GreatBasin", x$QUADRAT[1], "-agg.tif")))
+  
   
   if (file.exists(intermed)) {
     file.remove(intermed)
@@ -157,3 +120,59 @@ import_crop <- function(x, y, ppred){
   gc()
   
 }
+
+rast_project <- function(x, proj, ppred){
+  
+  rasty <- rast(x)
+  
+  terra::project(rasty, proj, filename = 
+                   file.path(ppred, "GreatBasin",
+                             gsub( 'agg', "5070", basename(x))))
+  
+  if (file.exists(x)) {
+    file.remove(x)
+    message(paste0("Aggregate mosaic deleted and replaced by final aggregated dataset, Quadrat:",  x))
+  }
+  
+  gc()
+  
+}
+
+
+
+#' generate and ensemble species distribution models here
+#' 
+#' Use this function to generate weighted Random Forest, Boosted Regression Trees, 
+#' and weighted Support Vector Machine models of probability of suitable habitat.
+
+Machine_SDM <- function(x){
+  
+  binomial <-  gsub(" ", "_", x$species)[1]
+  occ <-  x[x$Occurrence == 1, ]
+  absence <- x[x$Occurrence == 0, ]
+  
+  sdm_data_obj <- sdmData(formula = Occurrence ~ ., 
+                          bg = absence, 
+                          train = occ)
+
+  sdm_model <- sdm(
+    data = sdm_data_obj, 
+    methods = 'rf', replication = 'cv', cv.folds = 5, n = 3, 
+    parallelSettings = list(ncore = detectCores(), method = 'parallel'))
+  
+  fname <- paste0('../results/stats/', binomial, '_', Sys.Date(),'.csv')
+  evaluation <- getEvaluation(
+    sdm_model, stat=c('TSS','Kappa','AUC'), wtest=c('training','test'), opt = 1)
+  
+  write.csv(evaluation, file = fname, row.names = F)
+  
+
+  fname <- paste0('../results/maps/', binomial, '_', Sys.Date(),'.tif')
+  sdm_ensemble_prediction <- sdm::ensemble(
+    sdm_model, WPDPV, 
+    setting = list(method = "weighted", stat = 'tss', opt = 2), 
+    filename = fname)
+  
+  gc()
+}
+

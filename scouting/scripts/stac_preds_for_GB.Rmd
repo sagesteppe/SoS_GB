@@ -92,7 +92,7 @@ We need to re-project the rasters before stacking.
 ```{r, eval = F}
 files <- index %>% pull(location)
 newproj <- "epsg:5072" 
-ppred <- '/hdd/Geospatial_data/Western_Plant_Predictors/'
+ppred <- '/hdd/Geospatial_data/Western_Plant_Predictors'
 
 ifelse(!dir.exists(file.path(ppred, 'GreatBasin')), 
        dir.create(file.path(ppred, 'GreatBasin')), FALSE)
@@ -106,12 +106,29 @@ lapply(splindex, FUN = import_crop, y = inner_bounds, ppred = '/hdd/Geospatial_d
 rm(files.list, wppr, allrasters, files, index, splindex)
 ```
 
+```{r we also have to project these rasters}
+
+rasty <- file.path(ppred, 'GreatBasin',
+  list.files(file.path(ppred, 'GreatBasin'))
+)
+
+lapply(rasty, rast_project, proj = "epsg:5070", ppred = '/hdd/Geospatial_data/Western_Plant_Predictors')
+
+```
+
+
 
 ```{r}
 rasty <- file.path(ppred, 'GreatBasin',
   list.files(file.path(ppred, 'GreatBasin'))
 )
 
-collection <- vrt(rasty)
+filename = file.path(ppred, 'GreatBasin', 'GB-MOSAIC.tif')
+
+collection <- sprc(lapply(rasty, rast))
+terra::mosaic(collection, filename = filename)
+
+
+
 ```
 
