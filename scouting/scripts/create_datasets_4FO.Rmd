@@ -12,3 +12,104 @@ library(sf)
 library(tidyverse)
 ```
 
+```{r import spatial data}
+p_g_gen <- '../../geodata'
+p_dat <- '../data'
+
+geo <- list.files(p_g_gen, recursive = T, pattern = 'shp$|tif$')
+
+fo_boundary <- st_read(file.path(p_g_gen, geo[grep('GB_FieldO', geo)]), quiet = T)
+seedzones <- st_read(file.path(p_g_gen, geo[grep('WWETAC', geo)]), quiet = T)
+fire <- st_read(file.path(p_g_gen, geo[grep('FIRE', geo)]), quiet = T)
+
+surface_management <- st_layers(file.path(p_g_gen, 'SMA_WM.gdb'))
+
+blm <- st_read(dsn = file.path(p_g_gen, 'SMA_WM.gdb'),  layer = 'SurfaceMgtAgy_BLM', 
+               quiet = T) %>% 
+  filter(ADMIN_ST %in% c('CA', 'NV', 'OR', 'ID', 'UT')) %>% 
+  select(ADMIN_UNIT_NAME) %>% 
+  st_cast('MULTIPOLYGON') %>% 
+  st_make_valid()
+blm <- st_intersection(blm, st_transform(fo_boundary, st_crs(blm)))
+
+invasives <- rast(file.path(p_g_gen, geo[grep('AnnualGrasses', geo)]))
+
+list.files(p_dat, recursive = T, 'SDM-occ.shp')
+
+```
+
+
+```{r Import Species Occurrence data}
+occ <- st_read(file.path(p_dat, 
+                  list.files(p_dat, recursive = T, 'pres-abs.shp')), quiet = T) %>% 
+  filter(Occurrence == 1)
+
+# add on year of observation to these
+
+occ <- occ %>% 
+  filter(is.na(year)) %>% 
+  mutate(year = if_else(str_detect(PrimaryKey, '[A-Z]'),
+                        str_extract(PrimaryKey, '20[0-2][0-9]{1}_'),
+                        str_extract(PrimaryKey, '20[0-2][0-9]{1}-'
+                                    )),
+         year = as.numeric(str_remove(year, "_|-")), 
+         year = if_else(is.na(year), 2000, year)) %>% 
+  bind_rows(., filter(occ, !is.na(year))) 
+
+```
+
+
+
+```{r add in forest service}
+
+usfs <- st_read(file.path(p_g_gen, 'SMA_WM.gdb'), 'SurfaceMgtAgy_USFS', 
+                quiet = T) %>% 
+  filter(ADMIN_ST %in% c('CA', 'NV', 'OR', 'ID', 'UT')) %>% 
+  select(ADMIN_UNIT_NAME) %>% 
+  st_cast('MULTIPOLYGON') %>% 
+  st_make_valid() 
+
+usfs <- st_intersection(usfs, st_transform(fo_boundary, st_crs(usfs))) %>% 
+  mutate(Administration = 'Forest Service') %>% 
+  select(Administration)
+
+```
+
+
+```{r Clean up data for each event}
+
+blm <- blm %>% 
+  mutate(Administration = 'BLM') %>% 
+  select(Administration)
+
+fire <- fire[!st_is_empty(fire),,drop=FALSE]
+fire <- st_cast(fire, 'MULTIPOLYGON') %>% 
+  filter(FIRE_DSCVR <= 2023) %>% 
+  st_simplify(dTolerance = 100)
+
+fo_boundary <- fo_boundary %>% 
+  mutate(Crew = case_when(
+    Field_Off %in% c('Bristlecone', 'Wells', 'Tuscarora') ~ 'NE', 
+    Field_Off %in% c('Burns Andrews', 'Burns Three Rivers',  'Vale Malheur') ~ 'NW', 
+    Field_Off %in% c('Cedar City', 'Caliente', 'Fillmore') ~ 'SE',
+    Field_Off %in% c('Tonopah', 'Stillwater', 'Mount Lewis') ~ 'SW'
+)) %>% 
+  drop_na(Crew)
+
+```
+
+
+
+
+SPEI data are downloaded from:
+https://spei.csic.es/map/maps.html
+
+for the most recent time period as of writing, these data are:
+https://spei.csic.es/map/maps.html#months=4#month=2#year=2023
+
+The area which we download these data for spans from 36.25, -119.75 to 43.75, -110.75. We download data at the 12 month resolution
+
+```{r SPEI data}
+
+```
+
