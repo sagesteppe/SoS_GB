@@ -58,7 +58,6 @@ dat <- cbind(records[,c('species', 'Occurrence')] %>%
   drop_na()
 
 spliecies <- split(dat, f = dat$species)
-spliecies <- spliecies[16:55]
 WPDPV <- raster::stack(WPDPV)
 
 start <- system.time

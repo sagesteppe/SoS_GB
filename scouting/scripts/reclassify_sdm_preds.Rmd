@@ -1,0 +1,45 @@
+---
+title: "Model_Species_Distributions"
+author: "steppe"
+date: "2023-04-06"
+output: pdf_document
+---
+
+```{r}
+library(terra)
+library(tidyverse)
+library(sf)
+source('functions.R')
+```
+
+
+```{r prepare paths and import data}
+p <- '../results/maps'
+f <- list.files(p, pattern = 'tif$')
+
+preds <- rast(file.path(p, f))
+```
+
+
+```{r reclassify raster}
+
+m <- c(0, 0.5, 0, # reclassification MATRIX
+       0.5, 0.7, 1,
+       0.7, 0.8, 2,
+       0.8, 0.9, 3,
+       0.9, 1, 4)
+rclmat <- matrix(m, ncol = 3, byrow = TRUE) 
+
+# reclassify the raster
+rc1 <- classify(preds, rclmat, include.lowest = TRUE)
+rc1[rc1 == 0] <- NA
+```
+
+```{r save rasters}
+
+
+
+
+
+```
+

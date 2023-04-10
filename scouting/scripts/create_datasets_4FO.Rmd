@@ -1,0 +1,14 @@
+---
+title: "Create Field Office Specific Datasets"
+author: "steppe"
+date: "2023-04-06"
+output: pdf_document
+---
+
+
+```{r load libraries}
+library(terra)
+library(sf)
+library(tidyverse)
+```
+
