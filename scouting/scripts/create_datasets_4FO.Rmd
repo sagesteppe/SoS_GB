@@ -10,6 +10,8 @@ output: pdf_document
 library(terra)
 library(sf)
 library(tidyverse)
+library(tigris)
+options(tigris_use_cache = TRUE)
 ```
 
 ```{r import spatial data}
@@ -98,6 +100,35 @@ fo_boundary <- fo_boundary %>%
 ```
 
 
+```{r Gather Roads data}
+
+states <- states() %>% 
+  filter(STUSPS %in% c('OR',  'NV', 'UT')) %>% 
+  select(STUSPS, ST_NAME = NAME, STATEFP) %>% 
+  st_drop_geometry()
+
+my_counties <- counties(state = states$STUSPS) %>% 
+  filter(!NAME %in% c('Clark', 'Humboldt', 'Pershing', 'Box Elder', 'Tooele', 
+                      'Utah', 'Garfield', 'Kane', 'Washington', 'Deschutes', 
+                      'Crook', 'Grant', 'Baker', 'Lake', 'Lyon')) %>% 
+  select(NAME, STATEFP) %>% 
+  left_join(., states, by = 'STATEFP')
+
+my_counties <- my_counties[st_overlaps(my_counties, st_union(fo_boundary)) %>% 
+                             lengths > 0,] %>% 
+  st_drop_geometry()
+
+# see if this works!!!!!!
+counties <- apply(my_counties, MARGIN = 1, state =  STUSPS, county = NAME)
+
+roads()
+ggplot() +
+  geom_sf(data = my_counties, fill = NA) +
+  geom_sf(data = fo_boundary, fill = 'red', alpha = 0.4)
+
+```
+
+
 
 SPEI data are downloaded from:
 https://spei.csic.es/map/maps.html
@@ -116,6 +147,9 @@ The area which we download these data for spans from 36.25, -119.75 to 43.75, -1
 ```{r Extract data for each Field Office}
 
 #' Write out all spatial data for crews to a directory
+#'
+#' @param project_areas split sf data set, with each crews field office(s), and name
+#' @param crew_id column in project_areas holding the crews identifier info 'e.g. UFO'
 #' @param fo_bound sf data set administrative boundaries of the entire field office of interest
 #' @param _blm_surf sf data set of surface management as multipolygon at most
 #' @param fs_surf sf data set of surface USFS land management as multipolygon at most
@@ -124,12 +158,15 @@ The area which we download these data for spans from 36.25, -119.75 to 43.75, -1
 #' @param historic_SOS sf dataset with historic SoS endeavors and relevant info
 #' @param roads sf dataset of roads with relevant attritbutes
 #' @param seed_transfer sf dataset of seed transfer zones 
+#' @param drought6 netcdf of drought dataset from SPEI website, we recommend using 6 and 12 month
+#' @param drought12 12 netcdf of drought dataset from SPEI website, we recommend using 6 and 12 month
 
-project_maker <- function(x, 
+project_maker <- function(project_areas, crew_id, 
                           fo_bound, blm_surf, fs_surf, # ownership stuff
                           fire,  invasive,
                           sdm_stack,  occurrences, historic_SOS, 
-                          roads, seed_transfer){
+                          roads, seed_transfer, 
+                          drought6, drought12){
   
     #### Initiate Project Direcories ####
   
@@ -208,7 +245,7 @@ project_maker <- function(x,
     st_intersection(seed_transfer, focal_bbox) %>% 
       st_write(., dsn = file.path(crew_dir, 'Geodata/Species/STZ', 'STZ.shp'))
     
-    #drought
+    # drought
     st_intersection(seed_transfer, focal_bbox) %>% 
       st_write(., dsn = file.path(crew_dir, 'Geodata/Drought', 'drought-6.shp'))
     st_intersection(seed_transfer, focal_bbox) %>% 
