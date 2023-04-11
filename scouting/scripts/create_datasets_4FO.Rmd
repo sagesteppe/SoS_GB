@@ -24,8 +24,6 @@ fo_boundary <- st_read(file.path(p_g_gen, geo[grep('GB_FieldO', geo)]), quiet = 
 seedzones <- st_read(file.path(p_g_gen, geo[grep('WWETAC', geo)]), quiet = T)
 fire <- st_read(file.path(p_g_gen, geo[grep('FIRE', geo)]), quiet = T)
 
-surface_management <- st_layers(file.path(p_g_gen, 'SMA_WM.gdb'))
-
 blm <- st_read(dsn = file.path(p_g_gen, 'SMA_WM.gdb'),  layer = 'SurfaceMgtAgy_BLM', 
                quiet = T) %>% 
   filter(ADMIN_ST %in% c('CA', 'NV', 'OR', 'ID', 'UT')) %>% 
@@ -34,9 +32,7 @@ blm <- st_read(dsn = file.path(p_g_gen, 'SMA_WM.gdb'),  layer = 'SurfaceMgtAgy_B
   st_make_valid()
 blm <- st_intersection(blm, st_transform(fo_boundary, st_crs(blm)))
 
-invasives <- rast(file.path(p_g_gen, geo[grep('AnnualGrasses', geo)]))
-
-list.files(p_dat, recursive = T, 'SDM-occ.shp')
+invasives <- rast(file.path(p_g_gen, geo[grep('WGA', geo)]))
 
 ```
 
@@ -60,6 +56,20 @@ occ <- occ %>%
 
 ```
 
+```{r Import historic Scouting and SoS collections}
+
+scout <- read.csv('../../Historic_Scouting/Historic_SOS_Scouting_GreatBasin_40.csv') %>% 
+  filter(str_detect(Potential_, 'Operational_SOS_Collection')) %>% 
+  select(USDA = ABBREV_NAM, POPULATION, Notes = scoutingNo, Latitude, Longitude, Directions = Location_D, ACC_NUM) %>% 
+  st_as_sf(coords = c('Longitude', 'Latitude'), crs = 4269) %>% 
+  mutate(ACC_NUM = na_if(ACC_NUM, "")) %>% 
+  filter(is.na(ACC_NUM ))
+
+scout <- scout[st_covered_by(scout, st_union(fo_boundary)) %>% lengths > 0,]
+
+```
+
+
 
 ```{r add in forest service}
 
@@ -78,6 +88,24 @@ usfs <- st_intersection(usfs, st_transform(fo_boundary, st_crs(usfs))) %>%
 
 
 ```{r Clean up data for each event}
+
+seedzones <- bind_rows( 
+  
+  seedzones %>% 
+   filter(seed_zone %in% c('15 - 20 Deg. F. / 3 - 6', '15 - 20 Deg. F. / 6 - 12',
+                            '10 - 15 Deg. F. / 6 - 12', '20 - 25 Deg. F. / 3 - 6',
+                            '20 - 25 Deg. F. / 6 - 12'
+                            )) %>% 
+    mutate(Target = 'Priority'),
+
+  seedzones %>% 
+    filter(seed_zone %in% c('10 - 15 Deg. F. / 12 - 30', '15 - 20 Deg. F. / 12 - 30',
+                            '20 - 25 Deg. F. / 12 - 30', '25 - 30 Deg. F. / 12 - 30'
+                            )) %>% 
+    mutate(Target = 'Supplemental')
+  
+)
+
 
 blm <- blm %>% 
   mutate(Administration = 'BLM') %>% 
@@ -99,6 +127,34 @@ fo_boundary <- fo_boundary %>%
 
 ```
 
+```{r clean up invasives}
+
+f_vect <- st_union(fo_boundary) %>% 
+  vect() %>% 
+  project(crs(sdms)) %>% 
+  ext()
+
+invasives <- aggregate(invasives, fun =  "mean", factor = 4)
+invasives <- project(invasives, crs(sdms[[1]]), align = sdms[[1]], threads = T)
+invasives <- crop(invasives, f_vect, mask = T, threads = T)
+
+m <- c(0, 0.1, 0,
+       0.1, 0.2, 15,
+       0.2, 0.3, 25,
+       0.3, 0.4, 35, 
+       0.4, 0.5, 45, 
+       0.5, 0.6, 55,
+       0.6, 0.7, 65,
+       0.7, 0.8, 75,
+       0.8, 0.9, 85, 
+       0.9, 1.0, 95
+       )
+rclmat <- matrix(m, ncol=3, byrow=TRUE)
+invasives <- classify(invasives, rclmat, include.lowest=TRUE)
+
+rm(rclmat, f_vect)
+```
+
 
 ```{r Gather Roads data}
 
@@ -116,18 +172,40 @@ my_counties <- counties(state = states$STUSPS) %>%
 
 my_counties <- my_counties[st_overlaps(my_counties, st_union(fo_boundary)) %>% 
                              lengths > 0,] %>% 
-  st_drop_geometry()
+  st_drop_geometry() 
 
-# see if this works!!!!!!
-counties <- apply(my_counties, MARGIN = 1, state =  STUSPS, county = NAME)
+bf <- st_buffer(st_union(fo_boundary), dist = 10000)
 
-roads()
-ggplot() +
-  geom_sf(data = my_counties, fill = NA) +
-  geom_sf(data = fo_boundary, fill = 'red', alpha = 0.4)
+NV <- filter(my_counties, STUSPS == 'NV') %>% pull(NAME)
+NV <- c(NV, 'Eureka')
+NV_roads <- tigris::roads(state = 'NV', county = NV)  %>% 
+  select(-LINEARID, -MTFCC)
+NV_roads <- st_intersection(NV_roads, st_transform(bf, st_crs(NV_roads)))
 
+OR <- filter(my_counties, STUSPS == 'OR') %>% pull(NAME)
+OR_roads <- tigris::roads(state = 'OR', county = OR)  %>% 
+  select(-LINEARID, -MTFCC)
+OR_roads <- st_intersection(OR_roads, st_transform(bf, st_crs(OR_roads)))
+
+UT <- filter(my_counties, STUSPS == 'UT') %>% pull(NAME)
+UT_roads <- tigris::roads(state = 'UT', county = UT)  %>% 
+  select(-LINEARID, -MTFCC)
+UT_roads <- st_intersection(UT_roads, st_transform(bf, st_crs(UT_roads)))
+
+roads <- bind_rows(NV_roads, OR_roads, UT_roads) %>% 
+  st_transform(5070) %>% 
+  st_simplify(dTolerance = 10)
+
+rm(NV, UT, OR, bf, NV_roads, OR_roads, UT_roads, states, my_counties)
 ```
 
+
+```{r import species distribution models}
+
+sdms <- rast(file.path( '../results/preds_cat', 
+  list.files(path = '../results/preds_cat', pattern = 'tif')))
+
+```
 
 
 SPEI data are downloaded from:
@@ -140,17 +218,61 @@ The area which we download these data for spans from 36.25, -119.75 to 43.75, -1
 
 ```{r SPEI data}
 
+spei6 <- rast(
+  file.path(p_g_gen, 
+    list.files(p_g_gen, recursive = T, pattern = 'nc$')[1]
+  )
+) [[879]]
+
+spei12 <- rast(
+  file.path(p_g_gen, 
+    list.files(p_g_gen, recursive = T, pattern = 'nc$')[1]
+  )
+)[[879]]
+
+extent <- blm %>% 
+  vect() %>% 
+  project(crs(spei6)) %>% 
+  ext()
+
+spei6 <- crop(spei6, extent) %>% project(st_crs(sdms))
+spei12 <- crop(spei12, extent) %>% project(st_crs(sdms))
+
+rm(extent)
+```
+
+```{r import target species for each FO}
+
+targets <- read.csv(file.path(p_dat, 'target_taxa_2023.csv')) %>% 
+  mutate(across(where(is.character), ~ na_if(.x, "")),
+         across(Universal:NW, ~ str_replace(., 'X', '1')),
+         across(Universal:NW, ~ as.numeric(.x))) %>% 
+  select(Universal:Family, Max.per.crew = MAX.....crew) %>% 
+  pivot_longer(cols = Universal:NW, names_to = 'Crew', values_to = 'Target') %>% 
+  drop_na(Target)
+  
 ```
 
 
-
 ```{r Extract data for each Field Office}
+
+crew_list <- fo_boundary %>% 
+  split(., .$Crew)
+
+lapply(x = crew_list, FUN = project_maker, blm_surf = blm,
+              fs_surf = usfs, fire = fire, 
+              invasive = invasives,
+              sdm_stack = sdms, occurrences = occ, 
+              historic_SOS = scout,
+              roads = roads, seed_transfer = seedzones, 
+              drought6 = spei6, 
+              drought12 = spei12
+              )
 
 #' Write out all spatial data for crews to a directory
 #'
 #' @param project_areas split sf data set, with each crews field office(s), and name
 #' @param crew_id column in project_areas holding the crews identifier info 'e.g. UFO'
-#' @param fo_bound sf data set administrative boundaries of the entire field office of interest
 #' @param _blm_surf sf data set of surface management as multipolygon at most
 #' @param fs_surf sf data set of surface USFS land management as multipolygon at most
 #' @param fire sf data set of historic fires as multipopylgon at most
@@ -161,8 +283,21 @@ The area which we download these data for spans from 36.25, -119.75 to 43.75, -1
 #' @param drought6 netcdf of drought dataset from SPEI website, we recommend using 6 and 12 month
 #' @param drought12 12 netcdf of drought dataset from SPEI website, we recommend using 6 and 12 month
 
-project_maker <- function(project_areas, crew_id, 
-                          fo_bound, blm_surf, fs_surf, # ownership stuff
+f1 <- function(x){
+    x_df <- st_drop_geometry(x)
+    crew_dir <- paste0('../Crews/', x_df['Crew'][[1]][1], '-SeedsOfSuccess')
+    
+    dir.create( file.path(crew_dir, 'Geodata') )
+}
+
+if_else()
+dir.create(../Crews/)
+dir.create('../Crews/SW-SeedsOfSuccess/Geodata')
+
+lapply(crew_list, f1)
+
+project_maker <- function(x, 
+                          blm_surf, fs_surf, # ownership stuff
                           fire,  invasive,
                           sdm_stack,  occurrences, historic_SOS, 
                           roads, seed_transfer, 
@@ -171,7 +306,8 @@ project_maker <- function(project_areas, crew_id,
     #### Initiate Project Direcories ####
   
     # create directory to hold all contents
-    crew_dir <- paste0(x$Crew[1], '-SeedsOfSuccess')
+    x_df <- st_drop_geometry(x)
+    crew_dir <- paste0(x_df['Crew'][[1]][1], '-SeedsOfSuccess')
   
     # create main directory to hold geo data
     mkdir( file.path(crew_dir, 'Geodata') )
@@ -202,12 +338,15 @@ project_maker <- function(project_areas, crew_id,
     
     #### Process geographic data to a mask of the field office ####
     
-    focal_bbox <- focal_fo %>%  # create this to clip all data to.
+    focal_bbox <- x %>%  # create this to clip all data to.
+      st_union() %>% 
       st_transform(5070) %>% 
       st_buffer(dist = 10000) 
     
-    focal_vect  <- focal_bbox %>% 
-      SpatExtent()
+    focal_vect  <- focal_bbox %>%  
+      vect() %>% 
+      ext()
+    
     focal_bbox <- focal_bbox %>% 
       st_bbox(focal_fo)
   
@@ -224,8 +363,9 @@ project_maker <- function(project_areas, crew_id,
     # write out invasive species
     st_intersection(fire, focal_bbox) %>% 
       st_write(., dsn =  file.path(crew_dir, 'Geodata/DISTURB/FIRE', 'Fire.shp'))
-    st_intersection(invasive, focal_bbox) %>% 
-      st_write(., dsn = file.path(crew_dir, 'Geodata/DISTURB/INVASIVE', 'Invasive.shp'))
+    
+    crop(invasives, focal_vect, mask = T, threads = T, filename =
+           file.path(crew_dir, 'Geodata/DISTURB/INVASIVE', 'Invasive.tif'))
   
     # write out original species information
     sdm_fo <- crop(sdm, focal_vect, mask = T) # need to make a vect of this... 
@@ -246,10 +386,10 @@ project_maker <- function(project_areas, crew_id,
       st_write(., dsn = file.path(crew_dir, 'Geodata/Species/STZ', 'STZ.shp'))
     
     # drought
-    st_intersection(seed_transfer, focal_bbox) %>% 
-      st_write(., dsn = file.path(crew_dir, 'Geodata/Drought', 'drought-6.shp'))
-    st_intersection(seed_transfer, focal_bbox) %>% 
-      st_write(., dsn = file.path(crew_dir, 'Geodata/Drought', 'drought-12.shp'))
+    crop(invasives, focal_vect, mask = T, threads = T, filename =
+          file.path(crew_dir, 'Geodata/DISTURB/INVASIVE', 'drought-6.tif'))
+    crop(invasives, focal_vect, mask = T, threads = T, filename =
+          file.path(crew_dir, 'Geodata/DISTURB/INVASIVE', 'drought-12.tif'))
     
 }
 
