@@ -257,141 +257,27 @@ targets <- read.csv(file.path(p_dat, 'target_taxa_2023.csv')) %>%
 ```{r Extract data for each Field Office}
 
 crew_list <- fo_boundary %>% 
+  st_transform(5070) %>% 
   split(., .$Crew)
+blm <- st_transform(blm , 5070)
+usfs <- st_transform(usfs, 5070)
+scout <- st_transform(scout, 5070)
+fire <- st_transform(fire, 5070)
+seedzones <- st_transform(seedzones, 5070)
+spei6 <- project(spei6, crs(sdms))
+spei12 <- project(spei12, crs(sdms))
+usfs <- st_make_valid(usfs)
+blm <- st_make_valid(blm)
+seedzones <- st_make_valid(seedzones)
 
-lapply(x = crew_list, FUN = project_maker, blm_surf = blm,
-              fs_surf = usfs, fire = fire, 
-              invasive = invasives,
-              sdm_stack = sdms, occurrences = occ, 
-              historic_SOS = scout,
-              roads = roads, seed_transfer = seedzones, 
-              drought6 = spei6, 
-              drought12 = spei12
-              )
-
-#' Write out all spatial data for crews to a directory
-#'
-#' @param project_areas split sf data set, with each crews field office(s), and name
-#' @param crew_id column in project_areas holding the crews identifier info 'e.g. UFO'
-#' @param _blm_surf sf data set of surface management as multipolygon at most
-#' @param fs_surf sf data set of surface USFS land management as multipolygon at most
-#' @param fire sf data set of historic fires as multipopylgon at most
-#' @param invasive sf dataset of invasive species relative cover estimates
-#' @param historic_SOS sf dataset with historic SoS endeavors and relevant info
-#' @param roads sf dataset of roads with relevant attritbutes
-#' @param seed_transfer sf dataset of seed transfer zones 
-#' @param drought6 netcdf of drought dataset from SPEI website, we recommend using 6 and 12 month
-#' @param drought12 12 netcdf of drought dataset from SPEI website, we recommend using 6 and 12 month
-
-f1 <- function(x){
-    x_df <- st_drop_geometry(x)
-    crew_dir <- paste0('../Crews/', x_df['Crew'][[1]][1], '-SeedsOfSuccess')
-    
-    dir.create( file.path(crew_dir, 'Geodata') )
-}
-
-if_else()
-dir.create(../Crews/)
-dir.create('../Crews/SW-SeedsOfSuccess/Geodata')
-
-lapply(crew_list, f1)
-
-project_maker <- function(x, 
-                          blm_surf, fs_surf, # ownership stuff
-                          fire,  invasive,
-                          sdm_stack,  occurrences, historic_SOS, 
-                          roads, seed_transfer, 
-                          drought6, drought12){
-  
-    #### Initiate Project Direcories ####
-  
-    # create directory to hold all contents
-    x_df <- st_drop_geometry(x)
-    crew_dir <- paste0(x_df['Crew'][[1]][1], '-SeedsOfSuccess')
-  
-    # create main directory to hold geo data
-    mkdir( file.path(crew_dir, 'Geodata') )
-  
-    # write out BLM and Forest Service
-    mkdir( file.path(crew_dir, 'Geodata/ADMIN') ) 
-    mkdir( file.path(crew_dir, 'Geodata/ADMIN/BOUNDARIES') ) 
-    mkdir( file.path(crew_dir, 'Geodata/ADMIN/SURFACE') ) # both BLM and Forest Service go in here
-
-    # fire and invasive species data
-    mkdir( file.path(crew_dir, 'Geodata/DISTURB') ) 
-    mkdir( file.path(crew_dir, 'Geodata/DISTURB/FIRE') ) 
-    mkdir( file.path(crew_dir, 'Geodata/DISTURB/INVASIVE') ) 
-  
-    # target species information
-    mkdir( file.path(crew_dir, 'Geodata/Species') ) 
-    mkdir( file.path(crew_dir, 'Geodata/Species/SDM') ) 
-    mkdir( file.path(crew_dir, 'Geodata/Species/Occurrences') ) 
-    mkdir( file.path(crew_dir, 'Geodata/Species/Historic_SoS'))
-  
-    # Roads
-    mkdir( file.path(crew_dir, 'Geodata/Roads')) 
-    # Seed transfer zones
-    mkdir( file.path(crew_dir, 'Geodata/STZ')) 
-    # drought 
-    mkdir( file.path(crew_dir, 'Geodata/Drought'))
-    
-    
-    #### Process geographic data to a mask of the field office ####
-    
-    focal_bbox <- x %>%  # create this to clip all data to.
-      st_union() %>% 
-      st_transform(5070) %>% 
-      st_buffer(dist = 10000) 
-    
-    focal_vect  <- focal_bbox %>%  
-      vect() %>% 
-      ext()
-    
-    focal_bbox <- focal_bbox %>% 
-      st_bbox(focal_fo)
-  
-    #### Process and write out spatial data ####
-  
-    # write out ownership details
-    st_intersection(fo_bound, focal_bbox) %>% 
-      st_write(., dsn = file.path(crew_dir, 'Geodata/ADMIN/BOUNDARIES', 'Field_Office_Boundaries.shp' ))
-    st_intersection(blm_surf , focal_bbox) %>%  
-      st_write(., dsn = file.path(crew_dir, 'Geodata/ADMIN/SURFACE', 'BLM_Surface.shp'))
-    st_intersection(fs_surf , focal_bbox) %>% 
-      st_write(., dsn = file.path(crew_dir, 'Geodata/ADMIN/SURFACE', 'USFS_Surface.shp'))
-    
-    # write out invasive species
-    st_intersection(fire, focal_bbox) %>% 
-      st_write(., dsn =  file.path(crew_dir, 'Geodata/DISTURB/FIRE', 'Fire.shp'))
-    
-    crop(invasives, focal_vect, mask = T, threads = T, filename =
-           file.path(crew_dir, 'Geodata/DISTURB/INVASIVE', 'Invasive.tif'))
-  
-    # write out original species information
-    sdm_fo <- crop(sdm, focal_vect, mask = T) # need to make a vect of this... 
-    fnames <- paste0(crew_dir, 'Geodata/Species/SDM', str_remove(names(preds),
-                                                                 '_[0-9].*$'), ".tif")
-    writeRaster(sdm_fo, fnames)
-    
-    # write out species occurrence data
-    st_intersection(occurrences, focal_bbox) %>% 
-      st_write(., dsn = file.path(crew_dir, 'Geodata/Species/Occurrences', 'Occurrences.shp'))
-    st_intersection(historic_SOS, focal_bbox) %>% 
-      st_write(., dsn = file.path(crew_dir, 'Geodata/Species/Historic_SoS', 'Historic_SoS.shp'))
-    
-    # write out assorted data
-    st_intersection(roads, focal_bbox) %>% 
-      st_write(., dsn = file.path(crew_dir, 'Geodata/Species/Roads', 'roads.shp'))
-    st_intersection(seed_transfer, focal_bbox) %>% 
-      st_write(., dsn = file.path(crew_dir, 'Geodata/Species/STZ', 'STZ.shp'))
-    
-    # drought
-    crop(invasives, focal_vect, mask = T, threads = T, filename =
-          file.path(crew_dir, 'Geodata/DISTURB/INVASIVE', 'drought-6.tif'))
-    crop(invasives, focal_vect, mask = T, threads = T, filename =
-          file.path(crew_dir, 'Geodata/DISTURB/INVASIVE', 'drought-12.tif'))
-    
-}
+lapply(crew_list, FUN = project_maker, target_species = targets,
+       blm_surf = blm, 
+       fs_surf = usfs, fire = fire, 
+       invasive = invasives,
+       sdm_stack = sdms, occurrences = occ, 
+       historic_SOS = scout,
+       roads = roads, seed_transfer = seedzones, 
+       drought6 = spei6,  drought12 = spei12 )
 
 ```
 
