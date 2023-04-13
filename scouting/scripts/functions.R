@@ -183,6 +183,7 @@ Machine_SDM <- function(x){
 #' Write out all spatial data for crews to a directory
 #'
 #' @param project_areas split sf data set, with each crews field office(s), and name
+#' @param target_species a dataframe containing possible target species
 #' @param crew_id column in project_areas holding the crews identifier info 'e.g. UFO'
 #' @param _blm_surf sf data set of surface management as multipolygon at most
 #' @param fs_surf sf data set of surface USFS land management as multipolygon at most
@@ -214,6 +215,8 @@ project_maker <- function(x, target_species,
   ifelse(!dir.exists(file.path(crew_dir)), dir.create(file.path(crew_dir)), FALSE)
   ifelse(!dir.exists(file.path(crew_dir, 'Geodata')), 
          dir.create(file.path(crew_dir, 'Geodata')), FALSE)
+  ifelse(!dir.exists(file.path(crew_dir, 'Data')), 
+         dir.create(file.path(crew_dir, 'Data')), FALSE)
   
   # write out BLM and Forest Service
   dir.create( file.path(crew_dir, 'Geodata/Admin') ) 
@@ -247,18 +250,18 @@ project_maker <- function(x, target_species,
     st_buffer(dist = 10000) 
   
   focal_vect  <- focal_bbox %>%  
-    vect() %>% 
-    ext()
-  focal_bbox <- focal_bbox %>% 
-    st_bbox() %>% 
-    st_as_sfc()
+    vect()
+  focal_bbox <- focal_bbox 
   
   ### identify target species and pull out of the SDM stack
   
-  t <- targets %>% 
-    filter(Crew %in% c('Universal', x_df['Crew'][[1]][1])) %>% 
+  t_spp <- target_species %>% 
+    filter(Crew %in% c('Universal', x_df['Crew'][[1]][1])) 
+  t <- t_spp %>% 
     mutate(Species = str_replace(Species, " ", "_")) %>% 
     pull(Species)
+  
+  write.csv(t_spp, file = file.path(crew_dir, 'Data', 'Target-species.csv'), row.names = F)
   sub <- sdms[[str_remove(names(sdms), '_[0-9].*$') %in% t]]
 
   # write out ownership details
@@ -276,8 +279,21 @@ project_maker <- function(x, target_species,
          file.path(crew_dir, 'Geodata/Disturb/Invasive', 'Invasive.tif'))
   
   # write out species occurrence data
-  st_intersection(occurrences, focal_bbox) %>% 
-    st_write(., dsn = file.path(crew_dir, 'Geodata/Species/Occurrences', 'Occurrences.shp'), quiet = T)
+  
+  occurrences_sub <- filter(occurrences, species %in% t)
+  occurrences_list <- st_intersection(occurrences_sub, focal_bbox) %>% 
+    split(., f = .$species)
+  
+  occ_writer <- function(x){
+    x_df <- st_drop_geometry(x)
+    binomial <- paste0(x_df['species'][[1]][1], '.shp')
+    st_write(x,  dsn = file.path(crew_dir, 'Geodata/Species/Occurrences', binomial),
+             quiet = T, append = F)
+  }
+  
+  lapply(occurrences_list, occ_writer)
+    
+  #  st_write(., dsn = file.path(crew_dir, 'Geodata/Species/Occurrences', 'Occurrences.shp'), quiet = T)
   st_intersection(historic_SOS, focal_bbox) %>% 
     st_write(., dsn = file.path(crew_dir, 'Geodata/Species/Historic_SoS', 'Historic_SoS.shp'), quiet = T)
   
@@ -288,9 +304,9 @@ project_maker <- function(x, target_species,
     st_write(., dsn = file.path(crew_dir, 'Geodata/STZ', 'STZ.shp'), quiet = T)
   
   # drought
-  crop(invasives, focal_vect, mask = T, threads = T, filename =
+  crop(drought6, focal_vect, mask = T, threads = T, filename =
          file.path(crew_dir, 'Geodata/Drought', 'drought-6.tif'))
-  crop(invasives, focal_vect, mask = T, threads = T, filename =
+  crop(drought12, focal_vect, mask = T, threads = T, filename =
          file.path(crew_dir, 'Geodata/Drought', 'drought-12.tif'))
   
   # write out original species information
