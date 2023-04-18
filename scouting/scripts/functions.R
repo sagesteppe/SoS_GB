@@ -280,7 +280,7 @@ project_maker <- function(x, target_species,
   
   # write out species occurrence data
   
-  occurrences_sub <- filter(occurrences, species %in% t)
+  occurrences_sub <- filter(occurrences, species %in% t_spp$Species)
   occurrences_list <- st_intersection(occurrences_sub, focal_bbox) %>% 
     split(., f = .$species)
   
