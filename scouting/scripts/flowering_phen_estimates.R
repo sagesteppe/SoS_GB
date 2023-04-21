@@ -21,40 +21,36 @@ records <- records %>%
 breaks <- c(121, 152, 182, 213, 244)
 labels <- c('May', 'June', 'July', 'Aug.', 'Sept.')
 
+spliecies <- split(records, records$species)
 
-p_t <- records %>% 
-  filter(species == 'Penstemon speciosus') %>% 
+phen_maker_fn <- function(x){
   
-  ggplot() +
-  geom_density(aes(x = DOY), fill = '#E56399', color = '#7FD1B9', alpha = 0.5) +
-  theme_bw() + 
-  labs(title = 'Estimated Flowering') + 
-  theme(aspect.ratio = 6/16, 
-        plot.title = element_text(
-          hjust = 0.5, colour = "black", size = 14, face = "bold"),
-        axis.text.x= element_text(
-          family = "Tahoma", face = "bold", colour = "#7A6563", size=12),
-        panel.background = element_rect(fill='#E5D4CE'),
-        plot.background = element_rect(fill='#E5D4CE'),
-        panel.border = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        axis.title.y = element_blank(),
-        axis.title.x = element_blank(),
-        panel.grid.major.x = element_blank(),
-        panel.grid.major.y = element_blank(),
-        panel.grid.minor.x = element_blank(), 
-        panel.grid.minor.y = element_blank()) +
-  scale_x_continuous(breaks = breaks, labels=labels, limits = c(120, 245) )
+  species <- gsub('_', ' ', x$species[1])
 
+  ggplot(x) +
+    geom_density(aes(x = DOY), fill = '#E56399', color = '#7FD1B9', alpha = 0.5) +
+    theme_bw() + 
+    labs(title = 'Estimated Flowering') + 
+    theme(aspect.ratio = 6/16, 
+          plot.title = element_text(
+            hjust = 0.5, colour = "black", size = 14, face = "bold"),
+          axis.text.x= element_text(
+            family = "Tahoma", face = "bold", colour = "black", size=12),
+          panel.background = element_rect(fill='#E5D4CE'),
+          plot.background = element_rect(fill='#E5D4CE'),
+          panel.border = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.title.y = element_blank(),
+          axis.title.x = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.major.y = element_blank(),
+          panel.grid.minor.x = element_blank(), 
+          panel.grid.minor.y = element_blank()) +
+    scale_x_continuous(breaks = breaks, labels=labels, limits = c(120, 245) )
+  
+  ggsave(filename = paste0('../results/phen/', species, '.png'), plot = last_plot(), 
+         dpi = 150, width = 480, height = 270,  units = "px",  bg = 'transparent')
+}
 
-ggsave(p_t, filename = '../results/phen/test.png', dpi = 150, width = 480, 
-       height = 270,  units = "px",  bg = 'transparent')
-
-
-
-
-
-
-
-
+lapply(spliecies, phen_maker_fn)
