@@ -1,0 +1,109 @@
+---
+title: "Query locations for crews"
+author: "steppe"
+date: "2023-04-25"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(message  = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+```
+
+
+```{r loab libraries}
+library(googleway)
+library(tidyverse)
+library(sf)
+library(tigris)
+```
+
+```{r}
+key='AIzaSyBQGUyHUkA6U5M3f4F_Rf68M3YqWXycNco'
+```
+
+
+```{r}
+
+h_burns <- google_places(search_string = 'hospital', 
+              location=c(43.594, -119.044), rankby = 'distance', 
+              keyword = 'name', key = key)
+
+#' @param x search result from google
+#' @param y query string
+#' 
+true_types <- function(x, y){
+  
+  true_types <- lapply( # many attributes are in this column, test each one for a logical match
+    x[["results"]][["types"]], grep, y)
+  
+  w_tt <- which(sapply(true_types, any)) # identify rows with matches in the column
+  right_type <- x[["results"]][w_tt,] # subset the appropriate rows
+  
+  rt_df <- right_type[right_type$business_status == 'OPERATIONAL',
+                            c('name', 'formatted_address', 'user_ratings_total', 
+                              'rating', 'types')]
+  rt_geo <- cbind(rt_df, data.frame(
+      lat = right_type[,'geometry'][[1]]$lat,
+      long = right_type[,'geometry'][[1]]$lng
+      )
+    ) %>% 
+    st_as_sf(., coords = c(x = 'long', y = 'lat'), remove = F, crs = 4326)
+  
+  return(rt_geo)
+}
+
+t <- true_types(h_burns, 'hospital')
+
+
+
+repair <- google_places(search_string = 'auto_repair', keyword = 'name',
+              location=c(43.594, -119.044),  rankby = 'distance',  key=key)
+
+
+# which locations:
+location_type <- c(
+  'hospital', # Serious emergencies # top 20 
+  'police_station',  # top 20
+  
+  'car_repair', # bad emergencies # top 40
+  'gas_station', # top 40
+  
+  'lodging', # lesser emergencies # top 40
+  'library',   # top 20
+  'supermarket' # top 20
+)
+
+search_cities <- c(
+  'Burns', 
+  'Vale', 
+  
+  'Elko', 
+  'Ely', 
+  'Caliente',
+)
+
+```
+
+
+```{r}
+
+nv <- tigris::counties('Nevada')
+
+tigris::list_places('Nevada')
+```
+
+
+```{r}
+repair <- google_places(search_string = 'auto_repair', keyword = 'name',
+              location=c(43.594, -119.044),  rankby = 'distance',  key=key)
+
+repair1 <- google_places(search_string = 'auto_repair', keyword = 'name',
+              location=c(43.594, -119.044),  rankby = 'distance',  key=key, 
+              page_token = repair$next_page_token)
+
+```
+
+
