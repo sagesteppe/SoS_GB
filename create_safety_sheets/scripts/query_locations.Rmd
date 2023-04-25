@@ -13,6 +13,8 @@ knitr::opts_chunk$set(warning = FALSE)
 ```
 
 
+
+
 ```{r loab libraries}
 library(googleway)
 library(tidyverse)
@@ -21,7 +23,7 @@ library(tigris)
 ```
 
 ```{r}
-key='AIzaSyBQGUyHUkA6U5M3f4F_Rf68M3YqWXycNco'
+Sos_gkey = Sys.getenv("Sos_gkey")
 ```
 
 
@@ -29,7 +31,7 @@ key='AIzaSyBQGUyHUkA6U5M3f4F_Rf68M3YqWXycNco'
 
 h_burns <- google_places(search_string = 'hospital', 
               location=c(43.594, -119.044), rankby = 'distance', 
-              keyword = 'name', key = key)
+              keyword = 'name', key = SoS_gkey)
 
 #' @param x search result from google
 #' @param y query string
@@ -68,21 +70,32 @@ location_type <- c(
   'hospital', # Serious emergencies # top 20 
   'police_station',  # top 20
   
-  'car_repair', # bad emergencies # top 40
-  'gas_station', # top 40
+  'car_repair', # bad emergencies # top 20
+  'gas_station', # top 20
   
-  'lodging', # lesser emergencies # top 40
+  'lodging', # lesser emergencies # top 20
   'library',   # top 20
   'supermarket' # top 20
 )
 
 search_cities <- c(
+  
   'Burns', 
   'Vale', 
   
   'Elko', 
   'Ely', 
   'Caliente',
+  'Eureka',
+  
+  'Tonopah', 
+  'Austin',
+  'Fallon', 
+  
+  'Cedar City',
+  'Fillmore',
+  'Caliente'
+  
 )
 
 ```
@@ -91,8 +104,8 @@ search_cities <- c(
 ```{r}
 
 nv <- tigris::counties('Nevada')
+nvp <- places(state = 'NV')
 
-tigris::list_places('Nevada')
 ```
 
 
