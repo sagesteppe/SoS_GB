@@ -23,60 +23,38 @@ library(tigris)
 ```
 
 ```{r}
-Sos_gkey = Sys.getenv("Sos_gkey")
+source('functions.R')
+SoS_gkey = Sys.getenv("Sos_gkey")
 ```
 
 
-```{r}
+```{r gather all places and there locations}
 
-h_burns <- google_places(search_string = 'hospital', 
-              location=c(43.594, -119.044), rankby = 'distance', 
-              keyword = 'name', key = SoS_gkey)
+nvp <- places(state = c('OR', 'NV', 'UT')) |>
+  dplyr::select(NAME)
+```
 
-#' @param x search result from google
-#' @param y query string
-#' 
-true_types <- function(x, y){
-  
-  true_types <- lapply( # many attributes are in this column, test each one for a logical match
-    x[["results"]][["types"]], grep, y)
-  
-  w_tt <- which(sapply(true_types, any)) # identify rows with matches in the column
-  right_type <- x[["results"]][w_tt,] # subset the appropriate rows
-  
-  rt_df <- right_type[right_type$business_status == 'OPERATIONAL',
-                            c('name', 'formatted_address', 'user_ratings_total', 
-                              'rating', 'types')]
-  rt_geo <- cbind(rt_df, data.frame(
-      lat = right_type[,'geometry'][[1]]$lat,
-      long = right_type[,'geometry'][[1]]$lng
-      )
-    ) %>% 
-    st_as_sf(., coords = c(x = 'long', y = 'lat'), remove = F, crs = 4326)
-  
-  return(rt_geo)
-}
+```{r gather location data for each field crew}
 
-t <- true_types(h_burns, 'hospital')
-
-
-
-repair <- google_places(search_string = 'auto_repair', keyword = 'name',
-              location=c(43.594, -119.044),  rankby = 'distance',  key=key)
-
-
-# which locations:
-location_type <- c(
-  'hospital', # Serious emergencies # top 20 
-  'police_station',  # top 20
-  
-  'car_repair', # bad emergencies # top 20
-  'gas_station', # top 20
-  
-  'lodging', # lesser emergencies # top 20
-  'library',   # top 20
-  'supermarket' # top 20
+locations <- c(
+  'hospital', 'police_station',  # serious emergency
+  'car_repair', 'gas_station', # emergency
+  'lodging',  'library', 'supermarket' # ReEmergency 
 )
+
+NE <- c('Ely', 'Elko', 'Austin', 'Tonopah')
+SE <- c('Cedar City', 'Fillmore', 'Caliente')
+SW <- c('Tonopah', 'Austin', 'Fallon', 'Bishop')
+NW <- c('Burns', 'Andrews', 'Vale', 'Hiko')
+
+test <- services_fn(location_type = locations, 
+                    search_cities = c('Elko', 'Ely'), places_sf = nvp)
+
+# now ensure areas of interest are within ~50 miles of field office boundaries
+
+```
+
+```{r}
 
 search_cities <- c(
   
@@ -92,9 +70,6 @@ search_cities <- c(
   'Austin',
   'Fallon', 
   
-  'Cedar City',
-  'Fillmore',
-  'Caliente'
   
 )
 
@@ -102,21 +77,8 @@ search_cities <- c(
 
 
 ```{r}
-
-nv <- tigris::counties('Nevada')
-nvp <- places(state = 'NV')
-
-```
-
-
-```{r}
 repair <- google_places(search_string = 'auto_repair', keyword = 'name',
               location=c(43.594, -119.044),  rankby = 'distance',  key=key)
-
-repair1 <- google_places(search_string = 'auto_repair', keyword = 'name',
-              location=c(43.594, -119.044),  rankby = 'distance',  key=key, 
-              page_token = repair$next_page_token)
-
 ```
 
 
