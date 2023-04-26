@@ -29,7 +29,7 @@ true_types <- function(x, y){
   
   rt_geo <- rt_geo[w_tt,] # subset the appropriate rows
   rt_geo <- rt_geo[rt_geo$business_status == 'OPERATIONAL',
-                      c('name', 'formatted_address', 'user_ratings_total', 
+                      c('name',  'user_ratings_total', 
                         'rating', 'types', 'lat', 'long')]
   
   return(rt_geo)
@@ -39,24 +39,36 @@ true_types <- function(x, y){
 services_fn <- function(location_type, search_cities, places_sf, dist){
   
   resin <- vector(mode = "list", length = length(search_cities))
+  names(resin) <- search_cities
   for (i in 1:length(search_cities)){
   
     s_city <- coord_grab(places_sf, search_cities = search_cities[i])
   
-    searches <- lapply(location_type, FUN = google_places, 
-                     location=c(s_city[1,2], s_city[1,1]), rankby = 'distance', key = SoS_gkey)
+    searches <- vector(mode = "list", length = length(location_type))
+    for (z in 1:length(location_type)){
+      
+      searches[[z]] <- google_places(
+        place_type = location_type[z], location = c(s_city[1,2], s_city[1,1]),
+                                 rankby = 'distance', key = SoS_gkey)
+    }
+    
     names(searches) <- location_type
-
-    true_search <- mapply(FUN = true_types, x = searches, y = location_type, SIMPLIFY = FALSE)
-    resin[[i]] <- dplyr::bind_rows(true_search, .id = "Service")
+    searches <- searches[ sapply(lapply(searches, "[", 1:2), lengths) [2,] > 0 ]
+    
+    true_search <- mapply(FUN = true_types, x = searches, y = names(searches), SIMPLIFY = FALSE)
+    true_search <- true_search[sapply(true_search, function(x) dim(x)[1]) > 0]
+    true_search <- dplyr::bind_rows(true_search)
+    resin[[i]] <- true_search
+    
+    return(true_search)
   }
   
-  cands <- dplyr::bind_rows(resin) |>
+  
+  cands <- dplyr::bind_rows(resin) #|>
     dplyr::distinct(name, lat, long, .keep_all = T)
   
-  results <- within(cands, dist, search_cities, places_sf)
-  results <- dplyr::arrange(results, Service)
-  return(results)
+#  results <- within(cands, dist, search_cities, places_sf)
+#  results <- dplyr::arrange(results, Service)
 
 }
 
