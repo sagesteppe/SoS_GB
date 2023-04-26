@@ -19,7 +19,7 @@ $$\text{pl} * \text{infl} * \text{flr} * \text{sds} * 0.2 = \text{Harvestable yi
 
 We can also rearrange the equation to move the maximum allowable harvest ratio constant to undernearth the variables
 
-$$\frac{\text{pl} * \text{infl} * \text{flr} * \text{sds}}{5} = \text{Harvestable yield}$$ 
+$$\frac{\text{pl} * \text{infl} * \text{flr} * \text{sds}} {5} = \text{Harvestable yield}$$ 
 
 And it is that easy!
 
