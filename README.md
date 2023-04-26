@@ -11,15 +11,15 @@ $$\frac{\text{No. Plants}}{\text{Population}} * \frac{\text{No. Inflorescence}}{
 
 Because the terms underneath the equation cancel out, it may readily be simplified to:
 
-$$\text{No. Plants} * \text{No. Inflorescence} *\text{No. Flowers} * \text{No. Seeds} * 0.2=\text{Harvestable yield} $$ 
+$$\text{No. Plants} * \text{No. Inflorescence} *\text{No. Flowers} * \text{No. Seeds} * 0.2=\text{Harvestable yield}$$ 
 
 By substituting the variable names with abbreviations we then have
 
-$$\text{pl} * \text{infl} *\text{flr}*\text{sds}* 0.2=\text{Harvestable yield}$$ 
+$$\text{pl} * \text{infl} * \text{flr} * \text{sds} * 0.2 = \text{Harvestable yield}$$ 
 
 We can also rearrange the equation to move the maximum allowable harvest ratio constant to undernearth the variables
 
-$$\frac{\text{pl} * \text{infl} *\text{flr}*\text{sds}}{5} = \text{Harvestable yield}$$ 
+$$\frac{\text{pl} * \text{infl} * \text{flr} * \text{sds}}{5} = \text{Harvestable yield}$$ 
 
 And it is that easy!
 
