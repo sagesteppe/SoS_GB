@@ -185,3 +185,15 @@ ggplot() +
 ```
 
 
+
+```{r}
+
+plants <- 1000
+infl <- 5
+fruits <- 100
+seeds <- 1.8
+
+
+(plants * infl * fruits * seeds)/5
+```
+
