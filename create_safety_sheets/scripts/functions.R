@@ -57,8 +57,6 @@ services_fn <- function(location_type, search_cities, places_sf, dist){
     names(searches) <- location_type
     searches <- searches[ sapply(lapply(searches, "[", 1:2), lengths) [2,] > 0 ]
 
-  #  s_nam <- sub('police_station', 'police', names(searches))
-  #  names(searches) <- s_nam
     true_search <- mapply(FUN = true_types, x = searches, y = names(searches), SIMPLIFY = FALSE)
     true_search <- true_search[sapply(true_search, function(x) dim(x)[1]) > 0]
     true_search <- dplyr::bind_rows(true_search, .id = 'Service')
