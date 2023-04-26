@@ -7,12 +7,12 @@ This repository holds much of the work for the Seeds of Success IDIQ for the Gre
 
 <center>
 
-$$\frac{\text{# Plants}}{\text{Population}} * \frac{\text{# Inflorescence}}{\text{Plant}} * \frac{\text{# Flowers}}{\text{Inflorescence}}*\frac{\text{# Seeds}}{\text{Fruit}} * 0.2 = \frac{\text{Harvestable yield}}{\text{Population}}$$ 
+$$\frac{\text{No. Plants}}{\text{Population}} * \frac{\text{No. Inflorescence}}{\text{Plant}} * \frac{\text{No. Flowers}}{\text{Inflorescence}}*\frac{\text{No. Seeds}}{\text{Fruit}} * 0.2 = \frac{\text{Harvestable yield}}{\text{Population}}$$ 
 
 
 Because the terms underneath the equation cancel out, it may readily be simplified to:
 
-$$(\text{# Plants} * \text{# Inflorescence} *\text{# Flowers}*\text{# Seeds}) * 0.2 = \text{Harvestable yield}$$ 
+$$(\text{No. Plants} * \text{No. Inflorescence} *\text{No. Flowers}*\text{No. Seeds}) * 0.2 = \text{Harvestable yield}$$ 
 By substituting the variable names with abbreviations we then have
 
 $$(\text{pl} * \text{infl} *\text{flr}*\text{sds}) * 0.2 = \text{Harvestable yield}$$ 
@@ -32,7 +32,7 @@ $$\frac{\text{1,000} * \text{5} *\text{100}*\text{1.8}}{5} = \text{180,000 harve
 
 If we are trying to determine whether we have collected enough seeds the follow formula may be used
 
-$$\frac{\text{# Seeds Goal} * \frac{\text{# Cut Seeds}}{\text{# Viable Seeds}}}{\frac{\text{# Seeds}}{\text{Unit Weight}}} = \text{# Units Weight}$$ 
+$$\frac{\text{No. Seeds Goal} * \frac{\text{No. Cut Seeds}}{\text{No. Viable Seeds}}}{\frac{\text{No. Seeds}}{\text{Unit Weight}}} = \text{No. Units Weight}$$ 
 
 This is simpler than it looks, essentially all we need to do is multiple our target number of seeds, by the proportion of seeds which appear viable, and divide this by our unit of measurement. 
 
