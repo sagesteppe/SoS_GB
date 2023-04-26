@@ -9,10 +9,9 @@ This repository holds much of the work for the Seeds of Success IDIQ for the Gre
 
 $$\frac{\text{No. Plants}}{\text{Population}} * \frac{\text{No. Inflorescence}}{\text{Plant}} * \frac{\text{No. Flowers}}{\text{Inflorescence}}*\frac{\text{No. Seeds}}{\text{Fruit}} * 0.2 = \frac{\text{Harvestable yield}}{\text{Population}}$$ 
 
-
 Because the terms underneath the equation cancel out, it may readily be simplified to:
 
-$$(\text{No. Plants} * \text{No. Inflorescence} *\text{No. Flowers}*\text{No. Seeds}) * 0.2 = \text{Harvestable yield}$$ 
+$$(\text{No. Plants}*\text{No. Inflorescence}*\text{No. Flowers}*\text{No. Seeds})*0.2=\text{Harvestable yield}$$ 
 By substituting the variable names with abbreviations we then have
 
 $$(\text{pl} * \text{infl} *\text{flr}*\text{sds}) * 0.2 = \text{Harvestable yield}$$ 
