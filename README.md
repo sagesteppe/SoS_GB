@@ -27,7 +27,7 @@ Now a worked example is:
 
 A population of *Lomatium triternatum* has roughly **1,000 plants**, each of which has a mean of **5 inflorescence**, which produce a mean of **100 flowers**, which each produce a mean  of **1.8 seeds**. What is the estimated amount of seeds which this population will yield?
 
-$$\frac{\text{1,000} * \text{5} *\text{100}*\text{1.8}}{5} = \text{180,000 harvestable seeds}$$
+$$\frac{\text{1,000} * \text{5} *\text{100} * \text{1.8}}{5} = \text{180,000 harvestable seeds}$$
 
 ### Estimating the weight of seeds using Pure Live Seed needed to reach a collection
 
