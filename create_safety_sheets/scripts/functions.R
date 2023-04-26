@@ -2,6 +2,7 @@
 coord_grab <- function(places_data, search_cities){
   
   place <- places_data[grep(search_cities, places_data$NAME), ]
+  st_agr(place) = "constant"
   place <- sf::st_point_on_surface(place) |>
     sf::st_coordinates(place)
   
@@ -25,12 +26,13 @@ true_types <- function(x, y){
       long = right_type[,'geometry'][[1]]$lng
       )
     ) %>% 
-    st_as_sf(., coords = c(x = 'long', y = 'lat'), remove = F, crs = 4326)
+    st_as_sf(., coords = c(x = 'long', y = 'lat'), remove = F, crs = 4326) 
   
   rt_geo <- rt_geo[w_tt,] # subset the appropriate rows
-  rt_geo <- rt_geo[rt_geo$business_status == 'OPERATIONAL',
-                      c('name',  'user_ratings_total', 
-                        'rating', 'types', 'lat', 'long')]
+  rt_geo <- rt_geo[rt_geo$business_status == 'OPERATIONAL',]
+  
+  vars <- c('name',  'user_ratings_total', 'rating', 'types', 'lat', 'long')
+  rt_geo <- dplyr::select(rt_geo, any_of(vars))
   
   return(rt_geo)
 }
@@ -54,21 +56,21 @@ services_fn <- function(location_type, search_cities, places_sf, dist){
     
     names(searches) <- location_type
     searches <- searches[ sapply(lapply(searches, "[", 1:2), lengths) [2,] > 0 ]
-    
+
+  #  s_nam <- sub('police_station', 'police', names(searches))
+  #  names(searches) <- s_nam
     true_search <- mapply(FUN = true_types, x = searches, y = names(searches), SIMPLIFY = FALSE)
     true_search <- true_search[sapply(true_search, function(x) dim(x)[1]) > 0]
-    true_search <- dplyr::bind_rows(true_search)
+    true_search <- dplyr::bind_rows(true_search, .id = 'Service')
     resin[[i]] <- true_search
-    
-    return(true_search)
+  
   }
-  
-  
-  cands <- dplyr::bind_rows(resin) #|>
+
+   cands <- dplyr::bind_rows(resin, .id = 'Locality') |>
     dplyr::distinct(name, lat, long, .keep_all = T)
   
-#  results <- within(cands, dist, search_cities, places_sf)
-#  results <- dplyr::arrange(results, Service)
+  results <- within(cands, dist, search_cities, places_sf)
+  results <- dplyr::arrange(results, Service)
 
 }
 

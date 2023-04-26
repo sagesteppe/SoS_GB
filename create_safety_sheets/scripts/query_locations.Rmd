@@ -37,7 +37,7 @@ nvp <- places(state = c('OR', 'NV', 'UT')) |>
 ```{r gather location data for each field crew}
 
 locations <- c(
-  'hospital', 'police_station',  # serious emergency
+  'hospital', 'police',  # serious emergency
   'car_repair', 'gas_station', # emergency
   'lodging',  'library'# ReEmergency 
 )
@@ -47,10 +47,9 @@ SE <- c('Cedar City', 'Fillmore', 'Caliente')
 SW <- c('Tonopah', 'Austin', 'Fallon', 'Bishop')
 NW <- c('Burns', 'Andrews', 'Vale', 'Hiko')
 
-ne_areas <- services_fn(location_type = locations[1], dist = 400000, # in meters ~250 miles 
+ne_areas <- services_fn(location_type = locations, dist = 400000, # in meters ~250 miles 
                     search_cities = NE, places_sf = nvp)
 
-r <- google_places(place_type = 'gas_station', location=c(39.26, -114.8), rankby = 'distance', key = SoS_gkey)
 
 ```
 
