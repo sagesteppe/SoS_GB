@@ -39,39 +39,41 @@ nvp <- places(state = c('OR', 'NV', 'UT')) |>
 locations <- c(
   'hospital', 'police_station',  # serious emergency
   'car_repair', 'gas_station', # emergency
-  'lodging',  'library', 'supermarket' # ReEmergency 
+  'lodging',  'library'# ReEmergency 
 )
+
 
 NE <- c('Ely', 'Elko', 'Austin', 'Tonopah')
 SE <- c('Cedar City', 'Fillmore', 'Caliente')
 SW <- c('Tonopah', 'Austin', 'Fallon', 'Bishop')
 NW <- c('Burns', 'Andrews', 'Vale', 'Hiko')
 
-test <- services_fn(location_type = locations, 
-                    search_cities = c('Elko', 'Ely'), places_sf = nvp)
+ne_areas <- services_fn(location_type = locations, dist = 400000, # in meters ~250 miles 
+                    search_cities = NE, places_sf = nvp)
+
+
+r <- google_places(place_type = 'gas_station', location=c(39.26, -114.8), rankby = 'distance', key = SoS_gkey)
+
+
+locs <- vector(mode = "list", length = length(location_type))
+for (i in 1:length(location_type)){
+  
+  locs[[i]] <- google_places(place_type = location_type[i], location=c(39.26, -114.8),
+                rankby = 'distance', key = SoS_gkey)
+}
+names(locs) <- location_type
+searches <- dplyr::bind_rows(locs)
+
 
 # now ensure areas of interest are within ~50 miles of field office boundaries
 
+ggplot() +
+  geom_sf(data = ne_areas, aes(color = Service))
+
 ```
 
-```{r}
+```{r gather results for the crews and save locally before formatting}
 
-search_cities <- c(
-  
-  'Burns', 
-  'Vale', 
-  
-  'Elko', 
-  'Ely', 
-  'Caliente',
-  'Eureka',
-  
-  'Tonopah', 
-  'Austin',
-  'Fallon', 
-  
-  
-)
 
 ```
 

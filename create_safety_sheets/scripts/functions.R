@@ -18,23 +18,25 @@ true_types <- function(x, y){
     x[["results"]][["types"]], grep, y)
   
   w_tt <- which(sapply(true_types, any)) # identify rows with matches in the column
-  right_type <- x[["results"]][w_tt,] # subset the appropriate rows
+  right_type <- x[["results"]]
   
-  rt_df <- right_type[right_type$business_status == 'OPERATIONAL',
-                            c('name', 'formatted_address', 'user_ratings_total', 
-                              'rating', 'types')]
-  rt_geo <- cbind(rt_df, data.frame(
+  rt_geo <- cbind(right_type, data.frame(
       lat = right_type[,'geometry'][[1]]$lat,
       long = right_type[,'geometry'][[1]]$lng
       )
     ) %>% 
     st_as_sf(., coords = c(x = 'long', y = 'lat'), remove = F, crs = 4326)
   
+  rt_geo <- rt_geo[w_tt,] # subset the appropriate rows
+  rt_geo <- rt_geo[rt_geo$business_status == 'OPERATIONAL',
+                      c('name', 'formatted_address', 'user_ratings_total', 
+                        'rating', 'types', 'lat', 'long')]
+  
   return(rt_geo)
 }
 
 
-services_fn <- function(location_type, search_cities, places_sf){
+services_fn <- function(location_type, search_cities, places_sf, dist){
   
   resin <- vector(mode = "list", length = length(search_cities))
   for (i in 1:length(search_cities)){
@@ -42,18 +44,36 @@ services_fn <- function(location_type, search_cities, places_sf){
     s_city <- coord_grab(places_sf, search_cities = search_cities[i])
   
     searches <- lapply(location_type, FUN = google_places, 
-                     location=c(s_city[1,2], s_city[1,1]), rankby = 'distance', 
-                keyword = 'name', key = SoS_gkey)
+                     location=c(s_city[1,2], s_city[1,1]), rankby = 'distance', key = SoS_gkey)
     names(searches) <- location_type
 
-    true_search <- mapply(FUN = true_types, x = searches, y = l_type, SIMPLIFY = FALSE)
+    true_search <- mapply(FUN = true_types, x = searches, y = location_type, SIMPLIFY = FALSE)
     resin[[i]] <- dplyr::bind_rows(true_search, .id = "Service")
   }
   
-  results <- dplyr::bind_rows(resin) |>
+  cands <- dplyr::bind_rows(resin) |>
     dplyr::distinct(name, lat, long, .keep_all = T)
   
+  results <- within(cands, dist, search_cities, places_sf)
+  results <- dplyr::arrange(results, Service)
   return(results)
 
+}
+
+#' select locations only X within distance from places
+
+within <- function(x, dist, search_cities, places_data){
+  
+  cities <- places_data[grep(search_cities, places_data$NAME), ]
+  
+  focal <- sf::st_union(cities) %>% 
+    sf::st_transform(5070) %>% 
+    sf::st_buffer(dist)
+  x_5070 <- st_transform(x, 5070)
+  
+  x_sub <- x[sf::st_intersects(x_5070, focal) %>% lengths > 0,]
+  
+  return(x_sub)
+  
 }
 
