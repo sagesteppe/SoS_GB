@@ -21,6 +21,7 @@ library(tidyverse)
 library(sf)
 library(tigris)
 library(ggrepel)
+library(nngeo)
 ```
 
 ```{r}
@@ -137,11 +138,23 @@ ne_areas <- ne_areas %>% arrange(-usr_rt_) %>%
 se_areas <- se_areas %>% arrange(-usr_rt_) %>% 
   slice_head(n = 10, by = c('Service', 'Locality'))
 
-nw_areas <- se_areas %>% arrange(-usr_rt_) %>% 
+nw_areas <- nw_areas %>% arrange(-usr_rt_) %>% 
   slice_head(n = 10, by = c('Service', 'Locality'))
 
-se_areas <- se_areas %>% arrange(-usr_rt_) %>% 
+sw_areas <- sw_areas %>% arrange(-usr_rt_) %>% 
   slice_head(n = 10, by = c('Service', 'Locality'))
+
+```
+
+
+
+
+```{r add distance and direction of location from nearest town}
+
+f_areas <- split(se_areas, se_areas$Locality)
+focal <- places[grep(search_cities, places$NAME), ]
+
+out <- lapply(f_areas, distAZE, places_data = nvp)
 
 ```
 
@@ -184,16 +197,4 @@ ggplot() +
 
 ```
 
-
-
-```{r}
-
-plants <- 1000
-infl <- 5
-fruits <- 100
-seeds <- 1.8
-
-
-(plants * infl * fruits * seeds)/5
-```
 
