@@ -154,9 +154,9 @@ f_areas_sw <- split(sw_areas, sw_areas$Locality)
 f_areas_ne <- split(ne_areas, ne_areas$Locality)
 f_areas_nw <- split(nw_areas, nw_areas$Locality)
 
-ne_areas <- lapply(f_areas_se, distAZE, places_data = nvp) %>% bind_rows()
-se_areas <- lapply(f_areas_sw, distAZE, places_data = nvp) %>% bind_rows()
 ne_areas <- lapply(f_areas_ne, distAZE, places_data = nvp) %>% bind_rows()
+se_areas <- lapply(f_areas_se, distAZE, places_data = nvp) %>% bind_rows()
+sw_areas <- lapply(f_areas_sw, distAZE, places_data = nvp) %>% bind_rows()
 nw_areas <- lapply(f_areas_nw, distAZE, places_data = nvp) %>% bind_rows()
 
 rm(f_areas_se, f_areas_sw, f_areas_ne, f_areas_nw, distAZE)
@@ -234,10 +234,10 @@ rm(bbox, cc_lab, bp, state_cos)
 ```{r write out areas information, eval = F}
 p <- '../results/spatial'
 
-st_write(ne_areas, file.path(p, 'NE', 'NE.shp'))
-st_write(nw_areas, file.path(p, 'NW', 'NW.shp'))
-st_write(se_areas, file.path(p, 'SE', 'SE.shp'))
-st_write(sw_areas, file.path(p, 'SW', 'SW.shp'))
+st_write(ne_areas, file.path(p, 'NE', 'NE.shp'), append = F)
+st_write(nw_areas, file.path(p, 'NW', 'NW.shp'), append = F)
+st_write(se_areas, file.path(p, 'SE', 'SE.shp'), append = F)
+st_write(sw_areas, file.path(p, 'SW', 'SW.shp'), append = F)
 
 rm(nw_areas, ne_areas, sw_areas, se_areas, NE, NW, SE, SW, counties, p, nvp)
 ```

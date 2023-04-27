@@ -34,7 +34,8 @@ features <- st_read(file.path('../results/spatial/NE/NE.shp'), quiet = T) %>%
   mutate(across(lat:long, \(x) round(x, 3)),
          usr_rt_ = replace_na(usr_rt_, 0), 
          Service = factor(Service, levels = f_lvls), 
-         name = str_to_title(name)) %>% 
+         name = str_to_title(name), 
+         name = str_sub(name, 1, 50)) %>% 
   arrange(Service, Locality) %>% 
   st_drop_geometry() 
 
