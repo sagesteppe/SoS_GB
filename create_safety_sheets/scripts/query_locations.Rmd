@@ -59,7 +59,7 @@ fieldo_b <- fieldo %>%
 nv <- st_join(fieldo_b, nvp, join = st_intersects)
 nvp <- filter(nvp, NAME %in% nv$NAME) # reduces false positives from other searches
 
-rm(nv)
+rm(nv, fieldo, fieldo_b)
 ```
 
 
@@ -84,6 +84,9 @@ se_areas <- services_fn(locations, dist = 400000,  SE, places_sf = nvp)
 sw_areas <- services_fn(locations, dist = 400000,  SW, places_sf = nvp) 
 nw_areas <- services_fn(locations, dist = 400000,  NW, places_sf = nvp) 
 
+```
+
+```{r}
 rm(locations, services_fn, within, true_types, coord_grab, SoS_gkey)
 ```
 
@@ -147,54 +150,93 @@ sw_areas <- sw_areas %>% arrange(-usr_rt_) %>%
 ```
 
 
-
-
 ```{r add distance and direction of location from nearest town}
 
-f_areas <- split(se_areas, se_areas$Locality)
-focal <- places[grep(search_cities, places$NAME), ]
+f_areas_se <- split(se_areas, se_areas$Locality)
+f_areas_sw <- split(sw_areas, sw_areas$Locality)
+f_areas_ne <- split(ne_areas, ne_areas$Locality)
+f_areas_nw <- split(nw_areas, nw_areas$Locality)
 
-out <- lapply(f_areas, distAZE, places_data = nvp)
+ne_areas <- lapply(f_areas_se, distAZE, places_data = nvp) %>% bind_rows()
+se_areas <- lapply(f_areas_sw, distAZE, places_data = nvp) %>% bind_rows()
+ne_areas <- lapply(f_areas_ne, distAZE, places_data = nvp) %>% bind_rows()
+nw_areas <- lapply(f_areas_nw, distAZE, places_data = nvp) %>% bind_rows()
 
+rm(f_areas_se, f_areas_sw, f_areas_ne, f_areas_nw, distAZE)
 ```
 
 
-```{r quick map of the field office towns}
+```{r quick map of the field office towns, eval = F}
 
 intermountain_states <- states() %>% 
-  filter(NAME %in% c('Nevada', 'Utah', 'Oregon', 'California', 'Idaho'))
+  filter(NAME %in% c('Nevada', 'Utah', 'Oregon', 'California', 'Idaho', 'Arizona'))
 
 nv_roads <- roads(state = 'NV', county = counties$NAME) %>% 
   filter(RTTYP %in% c('I', 'U', 'C', 'S'))
+ca_roads <- roads(state = 'CA', county = c('Inyo', 'Mono', 'Alpine')) %>% 
+  filter(RTTYP %in% c('I', 'U', 'C', 'S'))
+or_roads <- roads(state = 'OR', county = c('Harney', 'Malheur', 'Lake')) %>% 
+  filter(RTTYP %in% c('I', 'U', 'C', 'S'))
+id_roads <- roads(state = 'ID', county = c('Owyhee', 'Twin Falls')) %>% 
+  filter(RTTYP %in% c('I', 'U', 'C', 'S'))
+ut_roads <- roads(
+  state = 'UT',
+  county = c('Millard', 'Beaver', 'Iron', 'Washington', 'Kane', 'Garfield', 'Piute')) %>% 
+  filter(RTTYP %in% c('I', 'U', 'C', 'S'))
+roads <- bind_rows(nv_roads, ca_roads, or_roads, id_roads, ut_roads)
 
-ne_bbox <- ne_areas %>% 
+rm(nv_roads, ca_roads, or_roads, id_roads, ut_roads)
+
+state_cos <- setNames(
+  c('#fdc086', '#beaed4', '#7fc97f', '#ffff99', '#386cb0', '#f0027f'),
+  c('Nevada', 'Idaho', 'Oregon', 'Utah', 'California', 'Arizona')
+)
+
+
+bp <- ggplot() +
+  geom_sf(data = intermountain_states, aes(fill = NAME), show.legend = F) + 
+  geom_sf(data = roads, color = 'grey50') + 
+  scale_fill_manual(values = state_cos) +  
+  theme_bw()  +
+  labs(x = NULL, y = NULL) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5),
+        axis.text.y = element_text(angle = 45, hjust = 0.5, vjust = 0.5),
+        plot.title = element_text(hjust = 0.5)) 
+
+
+# perform the same operation for each crews general area
+
+bbox <- sw_areas %>% 
   st_transform(5070) %>% 
   st_buffer(10000) %>% 
   st_transform(4326) %>% 
   st_bbox()
 
-cc_ne <- nvp %>%  
+cc_lab <- nvp %>%  
   st_centroid() %>% 
   st_transform(4326) %>% 
     mutate(longitude = unlist(map(.$geometry,1)),
            latitude = unlist(map(.$geometry,2))) %>% 
-  filter(NAME %in% NE)
+  filter(NAME %in% SW)
 
-cc_ne <- cc_ne[st_within(cc_ne, st_as_sfc(ne_bbox)) %>% lengths > 0,]
-  
-ggplot() +
-  geom_sf(data = intermountain_states, aes(fill = NAME), alpha= 0.3, show.legend = F) + 
-  geom_sf(data = nv_roads, color = 'grey50') + 
-  geom_sf(data = cc_ne) +
-  
-  geom_text_repel(data = cc_ne, aes(x = longitude, y = latitude, label = NAME)) + 
-  coord_sf(xlim = c(ne_bbox[1], ne_bbox[3]), ylim = c(ne_bbox[2], ne_bbox[4]))  +
-  theme_bw()  +
-  labs(title = 'NE Crew Area', x = NULL, y = NULL) + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5),
-        axis.text.y = element_text(angle = 45, hjust = 0.5, vjust = 0.5),
-        plot.title = element_text(hjust = 0.5))
+cc_lab <- cc_lab[st_within(cc_lab, st_as_sfc(bbox)) %>% lengths > 0,]
 
+bp +  
+  labs(title = 'SW Crew Area') +
+  geom_sf(data = cc_lab) +
+  geom_text_repel(data = cc_lab, aes(x = longitude, y = latitude, label = NAME)) + 
+  coord_sf(xlim = c(bbox[1], bbox[3]), ylim = c(bbox[2], bbox[4]))
+  
+ggsave('../results/maps/SW.png', dpi = 150, device = "png")
+
+
+rm(bbox, cc_lab, bp, state_cos)
 ```
 
+
+```{r write out areas information}
+
+
+rm(nw_areas, ne_areas, sw_areas, nw_areas, NE, NW, SE, SW, counties,)
+```
 
