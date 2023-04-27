@@ -1,0 +1,76 @@
+---
+title: "Resource Locations"
+date: "2023-04-25"
+output: pdf_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+knitr::opts_chunk$set(dpi = 300) 
+knitr::opts_chunk$set(message = F)
+knitr::opts_chunk$set(warning = F)
+```
+
+```{r}
+library(sf)
+library(knitr)
+library(kableExtra)
+library(tidyverse)
+```
+
+
+![North East area](../results/maps/NE.png){height=65%}
+
+\newpage
+
+
+```{r make table}
+
+f_lvls <- c('hospital', 'police', 'car_repair', 'gas_station', 'lodging', 'library')
+
+features <- st_read(file.path('../results/spatial/NE/NE.shp'), quiet = T) %>% 
+  arrange(Service) %>% 
+  mutate(across(lat:long, \(x) round(x, 3)),
+         usr_rt_ = replace_na(usr_rt_, 0), 
+         Service = factor(Service, levels = f_lvls), 
+         name = str_to_title(name)) %>% 
+  arrange(Service, Locality) %>% 
+  st_drop_geometry() 
+
+f <- count(features, Service) %>% 
+  mutate(end = cumsum(n), 
+         start = lag(end, n = 1L) + 1)
+
+features %>% 
+  select(-Service) %>% 
+  kable(
+    col.names = c('Town', 'Name', '# Rate', 
+                  'Rating', 'Lat.', 'Long.', 'Dist.', 'Azi'),
+    longtable = TRUE, booktabs = T) %>% 
+  landscape() %>% 
+  kable_styling(latex_options = c("repeat_header")) %>% 
+  collapse_rows(1) %>% 
+  
+  pack_rows("Hospital", 1, f[1,3], latex_gap_space = "2em")  %>% 
+  pack_rows("Police", f[2,4], f[2,3], latex_gap_space = "2em")  %>% 
+  pack_rows("Car Repair", f[3,4], f[3,3], latex_gap_space = "2em")  %>% 
+  pack_rows("Gas Station", f[4,4], f[4,3], latex_gap_space = "2em") %>% 
+  pack_rows("Lodging", f[5,4], f[5,3], latex_gap_space = "2em")  %>% 
+  pack_rows("Library", f[6,4], nrow(features), latex_gap_space = "2em")  %>% 
+  
+  footnote(c('Town: Refers to the town with the closet euclidean distance ("as the crow flies") to the organization',
+             'Name: A name from Google Maps of the Organization',
+             '# Rate: The number of Google ratings',
+             'Rating: the average Google Maps rating',
+             'Dist: the distance from the nearest town ("as the crow flies")',
+             'Azi: The azimuth FROM the town TO the organization', 
+             
+             "Be weary of these distance measurements; the true road distance in most instances will be greater.",
+             "The location they are measured from is the geographic center of town, not a sensible region like cross streets.",
+             "Locations have not been QA/QC'ed use common sense, some of these providers clearly suck."
+             ))
+  
+  
+```
+

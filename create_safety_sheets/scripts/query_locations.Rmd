@@ -5,14 +5,11 @@ date: "2023-04-25"
 output: html_document
 ---
 
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 knitr::opts_chunk$set(message  = FALSE)
 knitr::opts_chunk$set(warning = FALSE)
 ```
-
-
 
 
 ```{r loab libraries}
@@ -234,9 +231,14 @@ rm(bbox, cc_lab, bp, state_cos)
 ```
 
 
-```{r write out areas information}
+```{r write out areas information, eval = F}
+p <- '../results/spatial'
 
+st_write(ne_areas, file.path(p, 'NE', 'NE.shp'))
+st_write(nw_areas, file.path(p, 'NW', 'NW.shp'))
+st_write(se_areas, file.path(p, 'SE', 'SE.shp'))
+st_write(sw_areas, file.path(p, 'SW', 'SW.shp'))
 
-rm(nw_areas, ne_areas, sw_areas, nw_areas, NE, NW, SE, SW, counties,)
+rm(nw_areas, ne_areas, sw_areas, se_areas, NE, NW, SE, SW, counties, p, nvp)
 ```
 
