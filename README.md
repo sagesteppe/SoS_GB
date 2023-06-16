@@ -54,7 +54,7 @@ $$\frac{\text{5434 grams}}{\text{453.5 grams/lb}} = \text{12 pounds seed}$$
 
 
 | Layer |                       Description                       |              Source                            
-|-------|---------------------------------------------------------|---------------------------------------|  
+| :---: | :-----------------------------------------------------: | :-----------------------------------: |  
 |  1.   |              Mean Annual Air Temperature (BIO1)         |       PRISM / CLIMATENA/ DISMO        |
 |  2.   |                 Temperature seasonality (BIO4)          |             Wang et al.               |
 |  3.   |         Max Temperature of Warmest Month (BIO5)         |        PRISM / CLIMATENA / DISMO      |
