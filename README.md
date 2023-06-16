@@ -61,32 +61,34 @@ Layer                        Description                                   Sourc
 5.                   Mean annual precipitation (BIO12)                  Wang et al.
 6.                  Mean annual precipitation as snow                   Wang et al.
 7.                    Temperature seasonality (BIO4)                    Wang et al.
-8.             2015 Percent Grass/Herbaceous cover - MODIS               (MOD44B)
-9.               2015 Percent Tree cover from Landsat 7/8                 (GLCF)
-10.             Soil probability of bedrock (R Horizon)                  SoilGrids
-11.                   Soil organic carbon (Tonnes / ha)                  SoilGrids
-12.                   Surface (0-5 cm) soil pH in H~2~O                  SoilGrids
-13.                      30-60 cm soil pH in H~2~O                       SoilGrids
-14.                   Surface (0-5 cm) soil % sand                       SoilGrids
-15.                       5-15 cm  soil % sand                           SoilGrids
-16.                       15-30 cm soil % sand                           SoilGrids
-17.                   Surface (0-5 cm) soil % clay                       SoilGrids
-18.                       5-15 cm  soil % clay                           SoilGrids
-19.                       15-30 cm soil % clay                           SoilGrids
-20.                 Surface (0-5 cm) coarse fragments                    SoilGrids
-21.                         Soil USDA class                              SoilGrids
+8.                    Percent Herbaceous Vegetation                      EarthEnv
+9.                        Percent Shrub Cover                            EarthEnv
+10.                         Percent Barren                               EarthEnv
+11.             Soil probability of bedrock (R Horizon)                  SoilGrids
+12.                   Soil organic carbon (Tonnes / ha)                  SoilGrids
+13.                   Surface (0-5 cm) soil pH in H~2~O                  SoilGrids
+14.                      30-60 cm soil pH in H~2~O                       SoilGrids
+15.                   Surface (0-5 cm) soil % sand                       SoilGrids
+16.                       5-15 cm  soil % sand                           SoilGrids
+17.                       15-30 cm soil % sand                           SoilGrids
+18.                   Surface (0-5 cm) soil % clay                       SoilGrids
+19.                       5-15 cm  soil % clay                           SoilGrids
+20.                       15-30 cm soil % clay                           SoilGrids
+21.                 Surface (0-5 cm) coarse fragments                    SoilGrids
+22.                         Soil USDA class                              SoilGrids
 28.                            Elevation                                Geomorpho90
 29.                             Slope                                   Geomorpho90
 30.                             Aspect                                  Geomorpho90
 31.                    Topographic Wetness Index                        Geomorpho90
-32.                     Terrain ruggedness index                        Geomorpho90
+32.                     Terrain ruggedness Index                        Geomorpho90
 33.                          Geomorphon                                 Geomoprho90
 34.           Estimated actual (w/-cloud) solar radiation         r.sun / Wilson et al. 2016
 35.           Log-transformed distance to surface water          Global Surface Water Explorer
-36.            Max Temperature of Warmest Month (BIO5)       
-37.            Min Temperature of Coldest Month (BIO6)
-38.           Mean Temperature of Warmest Quarter (BIO10)
-39.           Mean Temperature of Coldest Quarter (BIO11)
-40.            Precipitation of Warmest Quarter (BIO18)
+36.                 Mean Annual Air Temperature (BIO1)             PRISM / CLIMATENA/ DISMO
+37.            Max Temperature of Warmest Month (BIO5)             PRISM / CLIMATENA/ DISMO
+38.            Min Temperature of Coldest Month (BIO6)             PRISM / CLIMATENA/ DISMO
+39.           Mean Temperature of Warmest Quarter (BIO10)          PRISM / CLIMATENA/ DISMO
+40.           Mean Temperature of Coldest Quarter (BIO11)          PRISM / CLIMATENA/ DISMO
+41.            Precipitation of Warmest Quarter (BIO18)            PRISM / CLIMATENA/ DISMO
 ----      ---------------------------------------------------   ----------------------------------
 
