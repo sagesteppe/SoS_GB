@@ -63,33 +63,34 @@ $$\frac{\text{5434 grams}}{\text{453.5 grams/lb}} = \text{12 pounds seed}$$
 |  6.   |        Mean Temperature of Coldest Quarter (BIO11)      |        PRISM / CLIMATENA / DISMO      |
 |  7.   |              Mean annual precipitation (BIO12)          |        PRISM / CLIMATENA / DISMO      |
 |  8.   |         Precipitation of Warmest Quarter (BIO18)        |        PRISM / CLIMATENA / DISMO      |
-|  9.   |                Mean annual cloudiness - MODIS           |          Wilson et al. 2016           |
-| 10.   |         Beginning of the frost-free period (gdgfgd0)    |              Wang et al.              |
-| 11.   |                   Climatic moisture deficit             |              Wang et al.              |
-| 12.   |                  Degree-days above 5C (gdd5)            |              Wang et al.              |
-| 13.   |               Mean annual precipitation as snow         |              Wang et al.              |
-| 14.   |                 Percent Herbaceous Vegetation           |               EarthEnv                |
-| 15.   |                     Percent Shrub Cover                 |               EarthEnv                |
-| 16.   |                      Percent Tree Cover                 |               EarthEnv                |
-| 17.   |          Soil probability of bedrock (R Horizon)        |              SoilGrids                |
-| 18.   |                Soil organic carbon (Tonnes / ha)        |              SoilGrids                |
-| 19.   |                Surface (0-5 cm) soil pH in H~2~O        |              SoilGrids                |
-| 20.   |                   30-60 cm soil pH in H~2~O             |              SoilGrids                |
-| 21.   |                Surface (0-5 cm) soil % sand             |              SoilGrids                |
-| 22.   |                    5-15 cm  soil % sand                 |              SoilGrids                |
-| 23.   |                    15-30 cm soil % sand                 |              SoilGrids                |
-| 24.   |                Surface (0-5 cm) soil % clay             |              SoilGrids                |
-| 25.   |                    5-15 cm  soil % clay                 |              SoilGrids                |
-| 26.   |                    15-30 cm soil % clay                 |              SoilGrids                |
-| 27.   |              Surface (0-5 cm) coarse fragments          |              SoilGrids                |
-| 28.   |                      Soil USDA class                    |              SoilGrids                |
-| 29.   |                         Elevation                       |             Geomorpho90               |
-| 30.   |                          Slope                          |             Geomorpho90               |
-| 31.   |                          Aspect                         |             Geomorpho90               |
-| 32.   |                 Topographic Wetness Index               |             Geomorpho90               |
-| 33.   |                  Terrain ruggedness Index               |             Geomorpho90               |
-| 34.   |                       Geomorphon                        |             Geomoprho90               |
-| 35.   |        Estimated actual (w/-cloud) solar radiation      |      r.sun / Wilson et al. 2016       |
-| 36.   |        Log-transformed distance to surface water        |     Global Surface Water Explorer     |
+|  9.   |        Precipitation of Colest Quarter (BIO19)          |        PRISM / CLIMATENA / DISMO      |
+| 10.   |                Mean annual cloudiness - MODIS           |          Wilson et al. 2016           |
+| 12.   |         Beginning of the frost-free period (gdgfgd0)    |              Wang et al.              |
+| 12.   |                   Climatic moisture deficit             |              Wang et al.              |
+| 13.   |                  Degree-days above 5C (gdd5)            |              Wang et al.              |
+| 14.   |               Mean annual precipitation as snow         |              Wang et al.              |
+| 15.   |                 Percent Herbaceous Vegetation           |               EarthEnv                |
+| 16.   |                     Percent Shrub Cover                 |               EarthEnv                |
+| 17.   |                      Percent Tree Cover                 |               EarthEnv                |
+| 18.   |          Soil probability of bedrock (R Horizon)        |              SoilGrids                |
+| 19.   |                Soil organic carbon (Tonnes / ha)        |              SoilGrids                |
+| 20.   |                Surface (0-5 cm) soil pH in H~2~O        |              SoilGrids                |
+| 21.   |                   30-60 cm soil pH in H~2~O             |              SoilGrids                |
+| 22.   |                Surface (0-5 cm) soil % sand             |              SoilGrids                |
+| 23.   |                    5-15 cm  soil % sand                 |              SoilGrids                |
+| 24.   |                    15-30 cm soil % sand                 |              SoilGrids                |
+| 25.   |                Surface (0-5 cm) soil % clay             |              SoilGrids                |
+| 26.   |                    5-15 cm  soil % clay                 |              SoilGrids                |
+| 27.   |                    15-30 cm soil % clay                 |              SoilGrids                |
+| 28.   |              Surface (0-5 cm) coarse fragments          |              SoilGrids                |
+| 29.   |                      Soil USDA class                    |              SoilGrids                |
+| 30.   |                         Elevation                       |             Geomorpho90               |
+| 31.   |                          Slope                          |             Geomorpho90               |
+| 32.   |                          Aspect                         |             Geomorpho90               |
+| 33.   |                 Topographic Wetness Index               |             Geomorpho90               |
+| 34.   |                  Terrain ruggedness Index               |             Geomorpho90               |
+| 35.   |                       Geomorphon                        |             Geomoprho90               |
+| 36.   |        Estimated actual (w/-cloud) solar radiation      |      r.sun / Wilson et al. 2016       |
+| 37.   |        Log-transformed distance to surface water        |     Global Surface Water Explorer     |
 
 
