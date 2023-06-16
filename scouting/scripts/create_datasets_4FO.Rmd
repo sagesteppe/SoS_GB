@@ -25,8 +25,19 @@ fo_boundary <- st_read(file.path(p_g_gen, geo[grep('GB_FieldO', geo)]), quiet = 
 seedzones <- st_read(file.path(p_g_gen, geo[grep('WWETAC', geo)]), quiet = T)
 fire <- st_read(file.path(p_g_gen, geo[grep('FIRE', geo)]), quiet = T)
 
+
+ensure_multipolygons <- function(X) {
+    tmp1 <- tempfile(fileext = ".gpkg")
+    tmp2 <- tempfile(fileext = ".gpkg")
+    st_write(X, tmp1)
+    gdalUtilities::ogr2ogr(tmp1, tmp2, f = "GPKG", nlt = "MULTIPOLYGON")
+    Y <- st_read(tmp2)
+    st_sf(st_drop_geometry(X), geom = st_geometry(Y))
+}
+
 blm <- st_read(dsn = file.path(p_g_gen, 'SMA_WM.gdb'),  layer = 'SurfaceMgtAgy_BLM', 
                quiet = T) %>% 
+  ensure_multipolygons(.) %>% 
   filter(ADMIN_ST %in% c('CA', 'NV', 'OR', 'ID', 'UT')) %>% 
   select(ADMIN_UNIT_NAME) %>% 
   st_cast('MULTIPOLYGON') %>% 
@@ -76,6 +87,7 @@ scout <- scout[st_covered_by(scout, st_union(fo_boundary)) %>% lengths > 0,]
 
 usfs <- st_read(file.path(p_g_gen, 'SMA_WM.gdb'), 'SurfaceMgtAgy_USFS', 
                 quiet = T) %>% 
+  ensure_multipolygons(.) %>% 
   filter(ADMIN_ST %in% c('CA', 'NV', 'OR', 'ID', 'UT')) %>% 
   select(ADMIN_UNIT_NAME) %>% 
   st_cast('MULTIPOLYGON') %>% 
@@ -122,7 +134,8 @@ fo_boundary <- fo_boundary %>%
     Field_Off %in% c('Bristlecone', 'Wells', 'Tuscarora') ~ 'NE', 
     Field_Off %in% c('Burns Andrews', 'Burns Three Rivers',  'Vale Malheur') ~ 'NW', 
     Field_Off %in% c('Cedar City', 'Caliente', 'Fillmore') ~ 'SE',
-    Field_Off %in% c('Tonopah', 'Stillwater', 'Mount Lewis') ~ 'SW'
+    Field_Off %in% c('Tonopah', 'Stillwater', 'Mount Lewis') ~ 'SW',
+    Field_Off %in% c('Applegate', 'Eagle Lake') ~ 'ELFO'
 )) %>% 
   drop_na(Crew)
 
@@ -168,7 +181,7 @@ rm(rclmat, f_vect)
 ```{r Gather Roads data}
 
 states <- states() %>% 
-  filter(STUSPS %in% c('OR',  'NV', 'UT')) %>% 
+  filter(STUSPS %in% c('OR', 'NV', 'UT', 'CA')) %>% 
   select(STUSPS, ST_NAME = NAME, STATEFP) %>% 
   st_drop_geometry()
 
@@ -178,6 +191,7 @@ my_counties <- counties(state = states$STUSPS) %>%
                       'Crook', 'Grant', 'Baker', 'Lake', 'Lyon')) %>% 
   select(NAME, STATEFP) %>% 
   left_join(., states, by = 'STATEFP')
+
 
 my_counties <- my_counties[st_overlaps(my_counties, st_union(fo_boundary)) %>% 
                              lengths > 0,] %>% 
@@ -201,11 +215,17 @@ UT_roads <- tigris::roads(state = 'UT', county = UT)  %>%
   select(-LINEARID, -MTFCC)
 UT_roads <- st_intersection(UT_roads, st_transform(bf, st_crs(UT_roads)))
 
-roads <- bind_rows(NV_roads, OR_roads, UT_roads) %>% 
+CA <- filter(my_counties, STUSPS == 'CA') %>% 
+  filter(NAME %in% c('Modoc', 'Lassen', 'Plumas', 'Siskiyou', 'Sierra')) %>% 
+  pull(NAME)
+CA_roads <- tigris::roads(state = 'CA', county = CA)  %>% 
+  select(-LINEARID, -MTFCC)
+
+roads <- bind_rows(NV_roads, OR_roads, UT_roads, CA_roads) %>% 
   st_transform(5070) %>% 
   st_simplify(dTolerance = 10)
 
-rm(NV, UT, OR, bf, NV_roads, OR_roads, UT_roads, states, my_counties)
+rm(CA, NV, UT, OR, bf, CA_roads, NV_roads, OR_roads, UT_roads, states, my_counties)
 ```
 
 
@@ -219,17 +239,18 @@ The area which we download these data for spans from 36.25, -119.75 to 43.75, -1
 
 ```{r SPEI data}
 
+# install.packages('ncdf4') if you dont have it
 spei6 <- rast(
   file.path(p_g_gen, 
     list.files(p_g_gen, recursive = T, pattern = 'nc$')[1]
   )
-) [[879]]
+) [[881]]
 
 spei12 <- rast(
   file.path(p_g_gen, 
     list.files(p_g_gen, recursive = T, pattern = 'nc$')[1]
   )
-)[[879]]
+) [[881]]
 
 extent <- blm %>% 
   vect() %>% 
@@ -268,10 +289,10 @@ rm(extent)
 
 targets <- read.csv(file.path(p_dat, 'target_taxa_2023.csv')) %>% 
   mutate(across(where(is.character), ~ na_if(.x, "")),
-         across(Universal:NW, ~ str_replace(., 'X', '1')),
-         across(Universal:NW, ~ as.numeric(.x))) %>% 
+         across(Universal:ELFO, ~ str_replace(., 'X', '1')),
+         across(Universal:ELFO, ~ as.numeric(.x))) %>% 
   select(Universal:Family, Max.per.crew = MAX.....crew) %>% 
-  pivot_longer(cols = Universal:NW, names_to = 'Crew', values_to = 'Target') %>% 
+  pivot_longer(cols = Universal:ELFO, names_to = 'Crew', values_to = 'Target') %>% 
   drop_na(Target)
   
 ```
@@ -293,6 +314,7 @@ usfs <- st_make_valid(usfs)
 blm <- st_make_valid(blm)
 seedzones <- st_make_valid(seedzones)
 
+crew_list <- crew_list[1]
 lapply(crew_list, FUN = project_maker, target_species = targets,
        blm_surf = blm, 
        fs_surf = usfs, fire = fire, 
