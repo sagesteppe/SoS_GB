@@ -14,6 +14,10 @@ library(parallel)
 source('functions.R')
 ```
 
+```{r}
+p <- '../data'
+f <- list.files(p)
+```
 
 
 ```{r Import Predictor Stack and reduce to spatial extent of analysis}
@@ -37,7 +41,6 @@ rm(ppred, names_vec)
 ```
 
 
-
 ```{r Import Species Records}
 records <- st_read( '../data/SDM-pres-abs/SDM-SDM-pres-abs.shp', quiet = T) %>% 
   mutate(Occurrence = as.factor(Occurrence))
@@ -50,7 +53,7 @@ records_v <- records %>%
 ```
 
 
-```{r Model Species}
+```{r Model Species, eval = F}
 
 dat <- terra::extract(WPDPV, records_v, ID = F)
 dat <- cbind(records[,c('species', 'Occurrence')] %>% 
@@ -62,6 +65,37 @@ WPDPV <- raster::stack(WPDPV)
 
 start <- system.time
 lapply(spliecies, Machine_SDM)
+system.time() - start
+```
+
+```{r model elfo}
+
+target_taxa_lkp <- read.csv(file.path(p, f[grep('taxa_2023', f)])) %>% 
+  filter(ELFO == 'X') %>% 
+  filter(across(c('NE', 'SE', 'SW', 'SE', 'Universal'), ~ str_detect(., 'X', negate = T))) %>% 
+  pull(Species) 
+
+records <- st_read( '../data/SDM-pres-abs/SDM-SDM-pres-abs2.shp', quiet = T) %>% 
+  mutate(Occurrence = as.factor(Occurrence)) %>% 
+  filter(species %in% target_taxa_lkp)
+records_v <- records %>% 
+  dplyr::select(binomial = species, occurrence = Occurrence, geometry) %>% 
+  st_zm(drop = T) %>% 
+  vect() %>% 
+  project(., crs(WPDPV))
+
+WPDPV <- rast(WPDPV)
+dat <- terra::extract(WPDPV, records_v, ID = F)
+dat <- cbind(records[,c('species', 'Occurrence')] %>% 
+               st_drop_geometry(), dat) %>% 
+  drop_na()
+
+WPDPV <- stack(WPDPV)
+
+spliecies <- split(dat, f = dat$species)
+
+start <- system.time
+lapply(spliecies[1:2], Machine_SDM)
 system.time() - start
 ```
 
