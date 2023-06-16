@@ -52,43 +52,44 @@ $$\frac{\text{5434 grams}}{\text{453.5 grams/lb}} = \text{12 pounds seed}$$
 
 ## Environmental Niche Models the New Arid West Batch
 
-Layer                        Description                                   Source
-----        -------------------------------------------------   ------------------------------------
-1.                   Mean annual cloudiness - MODIS                  Wilson et al. 2016
-2.            Beginning of the frost-free period (gdgfgd0)              Wang et al.
-3.                      Climatic moisture deficit                       Wang et al.
-4.                      Degree-days above 5C (gdd5)                     Wang et al.
-5.                   Mean annual precipitation (BIO12)                  Wang et al.
-6.                  Mean annual precipitation as snow                   Wang et al.
-7.                    Temperature seasonality (BIO4)                    Wang et al.
-8.                    Percent Herbaceous Vegetation                      EarthEnv
-9.                        Percent Shrub Cover                            EarthEnv
-10.                         Percent Barren                               EarthEnv
-11.             Soil probability of bedrock (R Horizon)                  SoilGrids
-12.                   Soil organic carbon (Tonnes / ha)                  SoilGrids
-13.                   Surface (0-5 cm) soil pH in H~2~O                  SoilGrids
-14.                      30-60 cm soil pH in H~2~O                       SoilGrids
-15.                   Surface (0-5 cm) soil % sand                       SoilGrids
-16.                       5-15 cm  soil % sand                           SoilGrids
-17.                       15-30 cm soil % sand                           SoilGrids
-18.                   Surface (0-5 cm) soil % clay                       SoilGrids
-19.                       5-15 cm  soil % clay                           SoilGrids
-20.                       15-30 cm soil % clay                           SoilGrids
-21.                 Surface (0-5 cm) coarse fragments                    SoilGrids
-22.                         Soil USDA class                              SoilGrids
-28.                            Elevation                                Geomorpho90
-29.                             Slope                                   Geomorpho90
-30.                             Aspect                                  Geomorpho90
-31.                    Topographic Wetness Index                        Geomorpho90
-32.                     Terrain ruggedness Index                        Geomorpho90
-33.                          Geomorphon                                 Geomoprho90
-34.           Estimated actual (w/-cloud) solar radiation         r.sun / Wilson et al. 2016
-35.           Log-transformed distance to surface water          Global Surface Water Explorer
-36.                 Mean Annual Air Temperature (BIO1)             PRISM / CLIMATENA/ DISMO
-37.            Max Temperature of Warmest Month (BIO5)             PRISM / CLIMATENA/ DISMO
-38.            Min Temperature of Coldest Month (BIO6)             PRISM / CLIMATENA/ DISMO
-39.           Mean Temperature of Warmest Quarter (BIO10)          PRISM / CLIMATENA/ DISMO
-40.           Mean Temperature of Coldest Quarter (BIO11)          PRISM / CLIMATENA/ DISMO
-41.            Precipitation of Warmest Quarter (BIO18)            PRISM / CLIMATENA/ DISMO
-----      ---------------------------------------------------   ----------------------------------
+
+| Layer |                       Description                       |              Source                            
+|-------|---------------------------------------------------------|---------------------------------------|  
+|  1.   |              Mean Annual Air Temperature (BIO1)         |       PRISM / CLIMATENA/ DISMO        |
+|  2.   |                 Temperature seasonality (BIO4)          |             Wang et al.               |
+|  3.   |         Max Temperature of Warmest Month (BIO5)         |        PRISM / CLIMATENA / DISMO      |
+|  4.   |         Min Temperature of Coldest Month (BIO6)         |        PRISM / CLIMATENA / DISMO      |
+|  5.   |        Mean Temperature of Warmest Quarter (BIO10)      |        PRISM / CLIMATENA / DISMO      |
+|  6.   |        Mean Temperature of Coldest Quarter (BIO11)      |        PRISM / CLIMATENA / DISMO      |
+|  7.   |              Mean annual precipitation (BIO12)          |        PRISM / CLIMATENA / DISMO      |
+|  8.   |         Precipitation of Warmest Quarter (BIO18)        |        PRISM / CLIMATENA / DISMO      |
+|  9.   |                Mean annual cloudiness - MODIS           |          Wilson et al. 2016           |
+| 10.   |         Beginning of the frost-free period (gdgfgd0)    |              Wang et al.              |
+| 11.   |                   Climatic moisture deficit             |              Wang et al.              |
+| 12.   |                  Degree-days above 5C (gdd5)            |              Wang et al.              |
+| 13.   |               Mean annual precipitation as snow         |              Wang et al.              |
+| 14.   |                 Percent Herbaceous Vegetation           |               EarthEnv                |
+| 15.   |                     Percent Shrub Cover                 |               EarthEnv                |
+| 16.   |                      Percent Tree Cover                 |               EarthEnv                |
+| 17.   |          Soil probability of bedrock (R Horizon)        |              SoilGrids                |
+| 18.   |                Soil organic carbon (Tonnes / ha)        |              SoilGrids                |
+| 19.   |                Surface (0-5 cm) soil pH in H~2~O        |              SoilGrids                |
+| 20.   |                   30-60 cm soil pH in H~2~O             |              SoilGrids                |
+| 21.   |                Surface (0-5 cm) soil % sand             |              SoilGrids                |
+| 22.   |                    5-15 cm  soil % sand                 |              SoilGrids                |
+| 23.   |                    15-30 cm soil % sand                 |              SoilGrids                |
+| 24.   |                Surface (0-5 cm) soil % clay             |              SoilGrids                |
+| 25.   |                    5-15 cm  soil % clay                 |              SoilGrids                |
+| 26.   |                    15-30 cm soil % clay                 |              SoilGrids                |
+| 27.   |              Surface (0-5 cm) coarse fragments          |              SoilGrids                |
+| 28.   |                      Soil USDA class                    |              SoilGrids                |
+| 29.   |                         Elevation                       |             Geomorpho90               |
+| 30.   |                          Slope                          |             Geomorpho90               |
+| 31.   |                          Aspect                         |             Geomorpho90               |
+| 32.   |                 Topographic Wetness Index               |             Geomorpho90               |
+| 33.   |                  Terrain ruggedness Index               |             Geomorpho90               |
+| 34.   |                       Geomorphon                        |             Geomoprho90               |
+| 35.   |        Estimated actual (w/-cloud) solar radiation      |      r.sun / Wilson et al. 2016       |
+| 36.   |        Log-transformed distance to surface water        |     Global Surface Water Explorer     |
+|-------|     ----------------------------------------------------|---------------------------------------|
 
