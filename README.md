@@ -46,6 +46,46 @@ And we can see that $125000 * 0.8 = 100,000$, so we have the estimates for the n
 We can convert this unit weight to a larger one, because 5,434 is a big (totally fictitious) number. Because we know that there are $\frac{\text{453.492 grams}}{\text{1 pound}}$ we can very simply:
 
 $$\frac{\text{5434 grams}}{\text{453.5 grams/lb}} = \text{12 pounds seed}$$
-
-
+  
 </center>
+
+
+## Environmental Niche Models the New Arid West Batch
+
+Layer                     Description                              Source
+----        ------------------------------------------    --------------------------------
+1.                  Mean annual cloudiness - MODIS               Wilson et al. 2016
+2.                Beginning of the frost-free period                 Wang et al.
+3.                   Climatic moisture deficit                       Wang et al.
+4.                    Degree-days above 5C                           Wang et al.
+5.                   Mean annual precipitation (BIO12)               Wang et al.
+6.                Mean annual precipitation as snow                  Wang et al.
+7.                   Temperature seasonality                        Wang et al.
+8.             2015 Percent Grass/Herbaceous cover - MODIS            (MOD44B)
+9.               2015 Percent Tree cover from Landsat 7/8              (GLCF)
+10.             Soil probability of bedrock (R Horizon)               SoilGrids
+11.               Soil organic carbon (Tonnes / ha)                   SoilGrids
+12.                   Surface (0-5 cm) soil pH in H~2~O               SoilGrids
+13.                      30-60 cm soil pH in H~2~O                    SoilGrids
+14.                   Surface (0-5 cm) soil % sand                    SoilGrids
+15.                       5-15 cm  soil % sand                        SoilGrids
+16.                       15-30 cm soil % sand                        SoilGrids
+17.                   Surface (0-5 cm) soil % clay                    SoilGrids
+18.                       5-15 cm  soil % clay                        SoilGrids
+19.                       15-30 cm soil % clay                        SoilGrids
+20.                  Surface (0-5 cm) coarse fragments                SoilGrids
+21.                         Soil USDA class                           SoilGrids
+28.                            Elevation                             Geomorpho90
+29.                             Slope                                Geomorpho90
+30.                             Aspect                               Geomorpho90
+31.                    Topographic Wetness Index                     Geomorpho90
+32.                     Terrain ruggedness index                     Geomorpho90
+33.                          Geomorphon                              Geomoprho90
+34.           Estimated actual (w/-cloud) solar radiation      r.sun / Wilson et al. 2016
+35.           Log-transformed distance to surface water       Global Surface Water Explorer
+36.            Max Temperature of Warmest Month (BIO5)       
+37.            Min Temperature of Coldest Month (BIO6)
+38.            Mean Temperature of Warmest Quarter (BIO10)
+39.            Mean Temperature of Coldest Quarter (BIO11)
+----         -------------------------------------------    ---------------------------------
+
