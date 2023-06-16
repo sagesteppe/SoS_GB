@@ -82,7 +82,11 @@ true_absence_ML <- function(x){ # for collecting true absence records from BLM l
     mutate(species = taxon,
            Occurrence = 0, .before = geometry)
   
-  AIM_absence <- AIM_absence[sample(1:nrow(AIM_absence), size = TA_req, replace = F),]
+  if(nrow(AIM_absence) > no_record) {
+    AIM_absence <- AIM_absence[sample(1:nrow(AIM_absence), size = TA_req, replace = F),]
+  } else(
+    AIM_absence <- AIM_absence[sample(1:nrow(AIM_absence), size = nrow(AIM_absence), replace = F),]
+  )
   
   out <- bind_rows(x %>% 
                      mutate(Occurrence = 1, .before = geometry), AIM_absence) %>% 
