@@ -46,6 +46,51 @@ And we can see that $125000 * 0.8 = 100,000$, so we have the estimates for the n
 We can convert this unit weight to a larger one, because 5,434 is a big (totally fictitious) number. Because we know that there are $\frac{\text{453.492 grams}}{\text{1 pound}}$ we can very simply:
 
 $$\frac{\text{5434 grams}}{\text{453.5 grams/lb}} = \text{12 pounds seed}$$
-
-
+  
 </center>
+
+
+## Environmental Niche Models the New Arid West Batch
+
+
+| Layer |                       Description                       |              Source                            
+| :---: | :-----------------------------------------------------: | :-----------------------------------: |  
+|  1.   |              Mean Annual Air Temperature (BIO1)         |       PRISM / CLIMATENA/ DISMO        |
+|  2.   |                 Temperature seasonality (BIO4)          |             Wang et al.               |
+|  3.   |         Max Temperature of Warmest Month (BIO5)         |        PRISM / CLIMATENA / DISMO      |
+|  4.   |         Min Temperature of Coldest Month (BIO6)         |        PRISM / CLIMATENA / DISMO      |
+|  5.   |        Mean Temperature of Warmest Quarter (BIO10)      |        PRISM / CLIMATENA / DISMO      |
+|  6.   |        Mean Temperature of Coldest Quarter (BIO11)      |        PRISM / CLIMATENA / DISMO      |
+|  7.   |              Mean annual precipitation (BIO12)          |        PRISM / CLIMATENA / DISMO      |
+|  8.   |         Precipitation of Warmest Quarter (BIO18)        |        PRISM / CLIMATENA / DISMO      |
+|  9.   |        Precipitation of Colest Quarter (BIO19)          |        PRISM / CLIMATENA / DISMO      |
+| 10.   |                Mean annual cloudiness - MODIS           |          Wilson et al. 2016           |
+| 12.   |         Beginning of the frost-free period (gdgfgd0)    |              Wang et al.              |
+| 12.   |                   Climatic moisture deficit             |              Wang et al.              |
+| 13.   |                  Degree-days above 5C (gdd5)            |              Wang et al.              |
+| 14.   |               Mean annual precipitation as snow         |              Wang et al.              |
+| 15.   |                 Percent Herbaceous Vegetation           |               EarthEnv                |
+| 16.   |                     Percent Shrub Cover                 |               EarthEnv                |
+| 17.   |                      Percent Tree Cover                 |               EarthEnv                |
+| 18.   |          Soil probability of bedrock (R Horizon)        |              SoilGrids                |
+| 19.   |                Soil organic carbon (Tonnes / ha)        |              SoilGrids                |
+| 20.   |                Surface (0-5 cm) soil pH in H~2~O        |              SoilGrids                |
+| 21.   |                   30-60 cm soil pH in H~2~O             |              SoilGrids                |
+| 22.   |                Surface (0-5 cm) soil % sand             |              SoilGrids                |
+| 23.   |                    5-15 cm  soil % sand                 |              SoilGrids                |
+| 24.   |                    15-30 cm soil % sand                 |              SoilGrids                |
+| 25.   |                Surface (0-5 cm) soil % clay             |              SoilGrids                |
+| 26.   |                    5-15 cm  soil % clay                 |              SoilGrids                |
+| 27.   |                    15-30 cm soil % clay                 |              SoilGrids                |
+| 28.   |              Surface (0-5 cm) coarse fragments          |              SoilGrids                |
+| 29.   |                      Soil USDA class                    |              SoilGrids                |
+| 30.   |                         Elevation                       |             Geomorpho90               |
+| 31.   |                          Slope                          |             Geomorpho90               |
+| 32.   |                          Aspect                         |             Geomorpho90               |
+| 33.   |                 Topographic Wetness Index               |             Geomorpho90               |
+| 34.   |                  Terrain ruggedness Index               |             Geomorpho90               |
+| 35.   |                       Geomorphon                        |             Geomoprho90               |
+| 36.   |        Estimated actual (w/-cloud) solar radiation      |      r.sun / Wilson et al. 2016       |
+| 37.   |        Log-transformed distance to surface water        |     Global Surface Water Explorer     |
+
+
