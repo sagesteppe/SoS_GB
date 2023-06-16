@@ -53,7 +53,7 @@ $$\frac{\text{5434 grams}}{\text{453.5 grams/lb}} = \text{12 pounds seed}$$
 ## Environmental Niche Models the New Arid West Batch
 
 Layer                     Description                              Source
-----        ------------------------------------------    --------------------------------
+----        ------------------------------------------   ------------------------------------
 1.                  Mean annual cloudiness - MODIS               Wilson et al. 2016
 2.                Beginning of the frost-free period                 Wang et al.
 3.                   Climatic moisture deficit                       Wang et al.
@@ -85,7 +85,7 @@ Layer                     Description                              Source
 35.           Log-transformed distance to surface water       Global Surface Water Explorer
 36.            Max Temperature of Warmest Month (BIO5)       
 37.            Min Temperature of Coldest Month (BIO6)
-38.            Mean Temperature of Warmest Quarter (BIO10)
-39.            Mean Temperature of Coldest Quarter (BIO11)
-----         -------------------------------------------    ---------------------------------
+38.           Mean Temperature of Warmest Quarter (BIO10)
+39.           Mean Temperature of Coldest Quarter (BIO11)
+----      --------------------------------------------------  ----------------------------------
 
