@@ -95,7 +95,7 @@ WPDPV <- stack(WPDPV)
 spliecies <- split(dat, f = dat$species)
 
 start <- system.time
-lapply(spliecies[1:2], Machine_SDM)
+lapply(spliecies[3:17], Machine_SDM)
 system.time() - start
 ```
 
