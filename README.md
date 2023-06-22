@@ -92,6 +92,7 @@ $$\frac{\text{5434 grams}}{\text{453.5 grams/lb}} = \text{12 pounds seed}$$
 | 35.   |                       Geomorphon                        |             Geomoprho90               |
 | 36.   |        Estimated actual (w/-cloud) solar radiation      |      r.sun / Wilson et al. 2016       |
 | 37.   |        Log-transformed distance to surface water        |     Global Surface Water Explorer     |
-| 38.   |                 Human Influence Index Map               |               Columbia                |
+| 38.   |                 Human Influence Index Map               | TIRGRIS / HDX/ BTS Rail Network /     |
+|       |                                                         |           NASA NTL  / NLCD            |
 
 
