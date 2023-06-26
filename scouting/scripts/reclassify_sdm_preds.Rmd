@@ -37,6 +37,6 @@ rc1[rc1 == 0] <- NA
 
 ```{r save rasters}
 fnames <- paste0("../results/preds_cat/", str_remove(names(preds), '_[0-9].*$'), ".tif")
-writeRaster(rc1, fnames)
+writeRaster(rc1, fnames, overwrite = T)
 ```
 

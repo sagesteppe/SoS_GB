@@ -51,7 +51,7 @@ invasives <- rast(file.path(p_g_gen, geo[grep('WGA', geo)]))
 
 ```{r Import Species Occurrence data}
 occ <- st_read(file.path(p_dat, 
-                  list.files(p_dat, recursive = T, 'pres-abs.shp')), quiet = T) %>% 
+                  list.files(p_dat, recursive = T, 'pres-abs2.shp')), quiet = T) %>% 
   filter(Occurrence == 1)
 
 # add on year of observation to these

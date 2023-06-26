@@ -1,0 +1,1 @@
+mogrify -auto-orient -strip -path ../no_geo *.jpg
