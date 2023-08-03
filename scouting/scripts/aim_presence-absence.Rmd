@@ -19,7 +19,7 @@ f <- list.files(p)
 
 ```{r load in existing presences}
 
-pub_presence <- st_read('../data/SDM-occ/SDM-occ.shp', quiet = T) %>% 
+pub_presence <- st_read('../data/SDM-occ/SDM-occ-SHRUBS.shp', quiet = T) %>% 
   st_transform(5070)
 
 target_taxa_lkp <- read.csv(file.path(p, f[grep('taxa_2023', f)])) %>% 
@@ -27,17 +27,6 @@ target_taxa_lkp <- read.csv(file.path(p, f[grep('taxa_2023', f)])) %>%
 
 ```
 
-```{r load in existing presences 2}
-
-pub_presence <- st_read('../data/SDM-occ/SDM-occ2.shp', quiet = T) %>% 
-  st_transform(5070)
-
-target_taxa_lkp <- read.csv(file.path(p, f[grep('taxa_2023', f)])) %>% 
-  filter(ELFO == 'X') %>% 
-  filter(if_any(c('NE', 'SE', 'SW', 'SE', 'Universal'), ~ str_detect(., 'X', negate = T))) %>% 
-  select(species = Species, USDA.Code) 
-
-```
 
 ```{r import analytical area for modelling}
 
@@ -93,7 +82,7 @@ spp_occurrences <- bind_rows(spp_found, pub_presence) %>%
                          'Poa secunda'))
 
 # st_write(spp_occurrences, '../data/SDM-occ/SDM-occ.shp', quiet = T, append = F) 
-st_write(spp_occurrences, '../data/SDM-occ/SDM-occ2.shp', quiet = T, append = F) 
+st_write(spp_occurrences, '../data/SDM-occ/SDM-occ-SHRUBS.shp', quiet = T, append = F) 
 
 rm(spp_found, pub_presence, spp_found)
 ```
@@ -161,7 +150,7 @@ rm(out, AIM_points, spp_occurrences, target_taxa_lkp, splicies)
 ```{r}
 ifelse(!dir.exists(file.path('../data', 'SDM-pres-abs')), 
        dir.create(file.path('../data', 'SDM-pres-abs')), FALSE)
-st_write(records, '../data/SDM-pres-abs/SDM-SDM-pres-abs2.shp', quiet = T, append = F) 
+st_write(records, '../data/SDM-pres-abs/SDM-SDM-pres-abs2-SHRUBS.shp', quiet = T, append = F) 
 ```
 
 ```{r}

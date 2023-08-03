@@ -117,3 +117,18 @@ st_write(coll_areas, '../results/Steens_Sites.shp')
 rm(gate3, Nloop, np_col, g3_patches, coll_areas)
 ```
 
+
+
+```{r what are the non-target stz}
+
+stz <- st_read('../../geodata/WWETAC_STZ')
+
+coll_areas <- st_read('../results/Steens_Sites.shp') |> 
+  st_transform(st_crs(stz))
+
+tstz <- st_intersection(coll_areas, stz) 
+tstz <- mutate(tstz, Area = as.numeric(st_area(tstz)/10000)) |>  
+  select(Site, seed_zone, Area)
+
+```
+
