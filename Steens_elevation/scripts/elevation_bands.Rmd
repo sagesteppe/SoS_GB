@@ -1,0 +1,119 @@
+---
+title: "Identify Collection Patches for STZs on Borders"
+author: "steppe"
+date: "2023-08-03"
+output: html_document
+---
+
+```{r chunk settings}
+knitr::opts_chunk$set(eval = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+```
+
+
+Crews are expected to make collections inside of a 200 meter elevation bands. Estimating this range is difficult with traditional Digital Elevation *Models*. With the rise in popularity of LiDAR and cloud point data processing, this is now achievable. Here we use a Digital Elevation *Product*, with 1m horizontal resolution to identify collection sites, using only the field-truthed upper bounds of a population as input. 
+
+```{r load libraries}
+library(tidyverse)
+library(sf)
+library(terra)
+```
+
+The Digital Elevation Product is produced by the United State Geological Survey. Existing products can be found on the National Map Viewer https://apps.nationalmap.gov/downloader/. Products may be downloaded using a wget script which runs as so:
+
+```{sh, eval = F}
+wget -i ../text/data_URL.txt
+```
+
+This will download all URL's which are present in the file download from the National Map Viewer. Non-linux support is offered by WGET, with the innovations of Windows 11, you should be able to run the above from your new Ubuntu terminal! :-)
+
+```{r import dep}
+p2dep <- '../data/dem/'
+f <- paste0(p2dep, list.files(path = p2dep, pattern = '*tif$'))
+
+dep <- terra::mosaic(terra::sprc(f))
+
+rm(p2dep, f)
+```
+
+Ground-truthed locations may be imported as SF objects and readily converted to Terra. The upper elevation limits can be downloaded from these. 
+
+```{r locate points}
+
+pops <- read.csv('../data/text/pop_locs.csv') |>
+  st_as_sf(coords = c('Longitude', 'Latitude'), crs = 4326) |>
+  st_transform(crs(dep)) 
+
+sites <- distinct(pops, Site, .keep_all = T) |>
+  vect()
+site_elev <- cbind(Site = sites$Site, terra::extract(dep, sites, cells = T))
+colnames(site_elev) <- c('Site', 'ID', 'Elevation', 'Cell')
+
+rm(pops)
+```
+
+Suitable elevation bands may be identified using a mask.
+
+```{r Collection Areas outline}
+
+msk_G3 <- ifel(dep < site_elev$Elevation[1] - 190 | dep > site_elev$Elevation[1] + 10, NA, 1)
+msk_NP <- ifel(dep < site_elev$Elevation[2] - 190 | dep > site_elev$Elevation[2] + 10, NA, 1)
+
+g3_col <- mask(dep, msk_G3)
+np_col <- mask(dep, msk_NP)
+
+rm(msk_G3, msk_NP, site_elev)
+```
+
+
+Relevant collection areas may be found based on their distance from the ground-truthed locations. Here we focus on collecting within 1 mile of the upper elevation limit point.
+
+```{r reduce extent to feasibly collectable areas}
+
+g3_d <- mask(dep, sites[1])
+g3_d <- distance(g3_d)
+g3_d_m <- ifel(g3_d < 1610, 1, NA)
+g3_col <- mask(g3_col, g3_d_m)
+
+np_d <- mask(dep, sites[2])
+np_d <- distance(np_d)
+np_d_m <- ifel(np_d < 1610, 1, NA)
+np_col <- mask(np_col, np_d_m)
+
+rm(g3_d_m, np_d_m, g3_d, np_d, dep)
+```
+
+We subset areas which are within the appropriate elevation band, and are accessible to collectors by identifying patches of elevation within the target distance from the original scouting point. 
+
+```{r identify core population patch}
+
+g3_patches <- patches(g3_col, directions = 8)
+target_patch <- terra::extract(g3_patches, sites[1], cells = T)
+g3_patches <- ifel(g3_patches == target_patch$patches, 1, NA)
+
+rm(target_patch, g3_col, sites)
+```
+
+```{r Create vector datasets of patches}
+
+gate3 <- as.polygons(g3_patches)|>
+  st_as_sf() |>
+  mutate(Site = 'Gate 3') |>
+  select(Site)
+
+Nloop <- as.polygons(np_col) |>
+  st_as_sf() |>
+  st_union() |>
+  st_cast('POLYGON') |>
+  st_as_sf() |>
+  rename(geometry = x) |>
+  mutate(Site = 'North Loop') 
+
+coll_areas <- bind_rows(gate3, Nloop)
+
+st_write(coll_areas, '../results/Steens_Sites.shp')
+
+rm(gate3, Nloop, np_col, g3_patches, coll_areas)
+```
+
