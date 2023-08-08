@@ -252,6 +252,7 @@ spei12 <- rast(
   )
 ) [[881]]
 
+
 extent <- blm %>% 
   vect() %>% 
   project(crs(spei6)) %>% 
@@ -311,10 +312,12 @@ seedzones <- st_transform(seedzones, 5070)
 spei6 <- project(spei6, crs(sdms))
 spei12 <- project(spei12, crs(sdms))
 usfs <- st_make_valid(usfs)
+usfs <- st_transform(usfs, 5070)
 blm <- st_make_valid(blm)
 seedzones <- st_make_valid(seedzones)
 
-crew_list <- crew_list[1]
+crew_list <- crew_list[2:5]
+
 lapply(crew_list, FUN = project_maker, target_species = targets,
        blm_surf = blm, 
        fs_surf = usfs, fire = fire, 

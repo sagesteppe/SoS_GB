@@ -1,0 +1,76 @@
+---
+title: "Model_Species_Distributions"
+author: "steppe"
+date: "2023-04-06"
+output: pdf_document
+---
+
+```{r}
+library(terra)
+library(tidyverse)
+library(sdm)
+library(sf)
+library(parallel)
+source('functions.R')
+```
+
+```{r}
+p <- '../data'
+f <- list.files(p)
+```
+
+
+```{r Import Predictor Stack and reduce to spatial extent of analysis}
+
+ppred <- '/hdd/Geospatial_data/Western_Plant_Predictors/'
+
+WPDPV <- rast(file.path(ppred, 'GreatBasin', 'GB-MOSAIC.tif'))
+
+names_vec <- c('PCL_MAN','PCL_SE1','PCL_SE2','PCL_SE3','PCM_BFP','PCM_CMD',
+                  'PCM_DD5', 'PCM_MAP','PCM_PAS','PCM_TD','PCT_ECO','PCT_EFW',
+                  'PLC_HRB', 'PLC_TRE', 'PLC_URB', 'PSL_BDR', 'PSL_CAR', 
+                  'PSL_PHO', 'PSL_SND','PSL_TUS','PSL_TWL','PTP_ELV','PTP_RLV',
+                  'PTP_SLP','PTP_WET','PTP_ASP','PTP_SOL', 'PCL_MRA','PSW_DIS',
+                  'PSW_OCC','PCO_XSC', 'PCO_YSC')
+
+names_vec <- names_vec[c(1:10, 13:14, 16:20, 22:26, 28, 31:32) ]
+names(WPDPV) <- names_vec
+WPDPV <- WPDPV[[c(1, 5:10, 13:14, 16:20, 22:26, 28, 31:32) ]]
+
+rm(ppred, names_vec)
+```
+
+
+```{r Import Species Records}
+Species <- read.csv('../data/target_shrubs-2023.csv') %>%
+  pull(Species)
+
+records <- st_read( '../data/SDM-pres-abs/SDM-SDM-pres-abs2-SHRUBS.shp', quiet = T) %>% 
+  mutate(Occurrence = as.factor(Occurrence)) %>% 
+  filter(species %in% Species) 
+records_v <- records %>% 
+  dplyr::select(binomial = species, occurrence = Occurrence, geometry) %>% 
+  st_zm(drop = T) %>% 
+  vect() %>% 
+  project(., crs(WPDPV))
+
+```
+
+
+```{r Model Species, eval = F}
+
+dat <- terra::extract(WPDPV, records_v, ID = F)
+dat <- cbind(records[,c('species', 'Occurrence')] %>% 
+               st_drop_geometry(), dat) %>% 
+  drop_na()
+
+spliecies <- split(dat, f = dat$species)
+WPDPV <- raster::stack(WPDPV)
+
+start <- system.time
+lapply(spliecies, Machine_SDM)
+system.time() - start
+```
+
+
+

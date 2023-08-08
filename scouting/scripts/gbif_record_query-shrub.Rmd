@@ -81,10 +81,17 @@ field_off <- st_convex_hull(field_off)
 
 ```{r clean gbif records to the extent of study area original download, eval = F}
 
+<<<<<<< HEAD
 file.path(p, 'GBIF_query-SHRUB' )
 
 spp_occ <- read.delim(
   file.path(file.path(p, 'GBIF_query-SHRUB' ), 
+=======
+file.path(p, 'GBIF_query1' )
+
+spp_occ <- read.delim(
+  file.path(file.path(p, 'GBIF_query1' ), 
+>>>>>>> fa27785904615721951e0d3d27906b1fef6b69b2
             list.files(file.path(p, 'GBIF_query1' ), recursive = T, pattern = 'occurrence.txt')),
   sep="\t",  header=TRUE, stringsAsFactors=FALSE, quote=""
   )[, c('gbifID', 'publisher', 'basisOfRecord', 'recordedBy', 
@@ -179,9 +186,15 @@ names(gbif_recs) <- unique(gbif_sub$species)
 
 gbif_out <- mapply(dupe_dropper, x = gbif_recs, y = bien_recs, dist_thresh = 1000, 
                SIMPLIFY = FALSE) %>% 
+<<<<<<< HEAD
   bind_rows() 
 
 gbif <- gbif_out %>% 
+=======
+  bind_rows()
+
+gbif <- bind_rows(gbif_out, filter(gbif, species == 'Astragalus eremiticus')) %>% 
+>>>>>>> fa27785904615721951e0d3d27906b1fef6b69b2
   unite('date', c('year', 'month', 'day'), sep = '-', remove = F ) %>% 
   mutate(date = as.Date(date)) %>% 
   select(species, date, year) 
@@ -202,7 +215,11 @@ rm(gbif_recs, bien, gbif, gbif_sub, bien_recs, gbif_out)
 
 ```{r include species occurrence records from BLM scouting work to dataset}
 
+<<<<<<< HEAD
 p <- '../data/'
+=======
+p <- '../data'
+>>>>>>> fa27785904615721951e0d3d27906b1fef6b69b2
 f <- list.files(p, recursive = T)
 
 target_taxa_lkp <- read.csv(file.path(p, 'target_shrubs-2023.csv')) %>% 

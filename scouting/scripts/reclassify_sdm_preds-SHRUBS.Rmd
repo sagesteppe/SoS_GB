@@ -1,0 +1,58 @@
+---
+title: "Model_Species_Distributions"
+author: "steppe"
+date: "2023-04-06"
+output: pdf_document
+---
+
+```{r}
+library(terra)
+library(tidyverse)
+library(sf)
+source('functions.R')
+```
+
+
+```{r prepare paths and import data}
+p <- '../results/maps'
+f <- list.files(p, pattern = 'tif$')
+
+sh <- read.csv('../data/target_shrubs-2023.csv') |> 
+  pull(Species) |>
+  str_remove("\\[.*\\]") |>
+  str_replace(" ", "_")
+
+sh <- f[unlist(sapply(sh, grep, f))]
+
+preds <- rast(file.path(p, f))
+preds_sh <- rast(file.path(p, sh))
+```
+
+
+```{r reclassify raster}
+
+m <- c(-0.1, 0.5, 0, # reclassification MATRIX
+        0.5, 0.7, 1,
+        0.7, 0.8, 2,
+        0.8, 0.9, 3,
+        0.9, 1.0, 4)
+rclmat <- matrix(m, ncol = 3, byrow = TRUE) 
+
+# reclassify the raster
+rc1 <- classify(preds, rclmat, include.lowest = TRUE)
+rc1[rc1 == 0] <- NA
+
+rc1_sh <- classify(preds_sh, rclmat, include.lowest = TRUE)
+rc1_sh[rc1_sh == 0] <- NA
+```
+
+```{r save rasters, eval = F}
+fnames <- paste0("../results/preds_cat/", str_remove(names(preds), '_[0-9].*$'), ".tif")
+writeRaster(rc1, fnames, overwrite = T)
+```
+
+```{r}
+fnames <- paste0("../results/preds_cat/", str_remove(names(preds_sh), '_[0-9].*$'), ".tif")
+writeRaster(rc1_sh, fnames, overwrite = T)
+```
+

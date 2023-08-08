@@ -81,7 +81,6 @@ spp_occurrences <- bind_rows(spp_found, pub_presence) %>%
                          'Elymus elymoides',
                          'Poa secunda'))
 
-# st_write(spp_occurrences, '../data/SDM-occ/SDM-occ.shp', quiet = T, append = F) 
 st_write(spp_occurrences, '../data/SDM-occ/SDM-occ-SHRUBS.shp', quiet = T, append = F) 
 
 rm(spp_found, pub_presence, spp_found)
