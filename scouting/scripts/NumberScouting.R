@@ -44,10 +44,8 @@ dat <- group_by(dat, Crew) %>%
   st_drop_geometry()
 
 dat %>% 
-  count(Potential.Collection.Type) #%>% 
-#  mutate(Total_Pops = sum(n)) %>% 
-  pivot_wider(-Crew, name = 'Potential.Collection.Type')
-
-
-  ?pivot_wider
+  count(Potential.Collection.Type) %>% 
+  pivot_wider(id_cols = Crew, names_from = 'Potential.Collection.Type',
+              values_from = n) %>% 
+  mutate(Total_Pops = sum(c_across(Operational_SOS_Collection:other), na.rm = T))
   
