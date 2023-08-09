@@ -5,39 +5,20 @@ setwd('/media/sagesteppe/ExternalHD/SoS_GB/scouting/scripts')
 
 st_layers('../data/explore-extract.gpx')
 
-tracks <- st_read('../data/explore-extract.gpx', layer = 'tracks') 
-track_pts <- st_read('../data/explore-extract.gpx', layer = 'track_points')
+track_pt_cols <- c('track_fid', 'track_seg_point_id', 'time', 'desc', 'geometry')
 
-tracks <- tracks[ as.numeric(st_length(tracks)) > 0, ] %>% 
-  select(name, desc)
+tracks <- st_read('../data/explore-extract.gpx', layer = 'tracks') 
+track_pts <- st_read('../data/explore-extract.gpx', layer = 'track_points') |>
+  dplyr::select(dplyr::all_of(track_pt_cols))
+
+tracks <- tracks[ as.numeric(st_length(tracks)) > 0, ] |> 
+  dplyr::select(name, desc) |> 
+  dplyr::mutate(across(name:desc, ~ stringr::str_replace_all(., "\\(|\\).*$", "")))
 
 ggplot(tracks) +
   geom_sf(aes(colour = name))
 
-rm(dat)
-
-
-fid3 <- track_pts %>% 
-  filter(track_fid == 3) 
-
-
-ggplot() +
-  geom_sf(data = fid3, size = 5) #+
-#  geom_sf(data = tracks)
-
-
-
-# Line strings need to be combined with tracking points. The tracking
-# points contain the date time stamps required to determine hitches. 
-
-
-# need to loop through each FID set of points 
-
-test <- st_intersects(tracks, fid3)
-
-which.max ( lapply(test, length) )  # identifies the track with most overlaps
-
-
+rm(track_pt_cols)
 
 # process, identify each crews FO's and base location
 # bbox the above
@@ -54,7 +35,6 @@ crews2023 <- data.frame(
   Field_Office = c('El Centro')
 )
 
-
 p <- '../../geodata/ADMU/CA_ADMU/'
 admu <- st_read(paste0(p, 'BLM_CA_Administrative_Unit_Boundary_Polygons.shp')) %>% 
   mutate(Field_Office = str_remove(ADMU_NAME, ' Field Office')) %>% 
@@ -63,7 +43,7 @@ admu <- st_read(paste0(p, 'BLM_CA_Administrative_Unit_Boundary_Polygons.shp')) %
 
 # reduce all BLM administrative units to only those with active crews
 crew_areas <- dplyr::left_join(admu, crews2023, by = 'Field_Office') %>% 
-  dplyr::drop_na(CrewName) 
+  tidyr::drop_na(CrewName) 
 
 # creating a bonding box over the field offices
 total_area <- crew_areas |> 
@@ -87,14 +67,19 @@ fid_areas <- st_intersection(track_pts, bboxes) |>
   dplyr::slice_max(n) 
 
 ## split out track_fid 
-
-track_pts_fid <- dplyr::left_join(fid_areas, track_pts)
-
-split_tracks <- split(
-  track_pts_fid, f = list(track_pts_fid$track_fid, track_pts_fid$CrewName) )
+track_pts_fid <- dplyr::left_join(fid_areas, track_pts) |>
+  sf::st_as_sf()
 
 ## subset to the potential crew associated with the track
 
+ob <- st_intersects(tracks, track_pts_fid)
+names(ob) <- tracks$name
+ob <- data.frame(
+  Track = gsub("\\(|\\).*$", "", names(unlist(ob))), 
+  Point = unlist(ob)
+  ) 
+
+cbind(ob, track_pts_fid)
 
 ggplot() +  
   geom_sf(data = total_area) +  
