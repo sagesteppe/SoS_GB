@@ -61,17 +61,46 @@ admu <- st_read(paste0(p, 'BLM_CA_Administrative_Unit_Boundary_Polygons.shp')) %
   select(Field_Office, geometry) %>% 
   st_as_sf() 
 
-crew_areas <- left_join(admu, crews2023, by = 'Field_Office') %>% 
-  drop_na(CrewName) 
+# reduce all BLM administrative units to only those with active crews
+crew_areas <- dplyr::left_join(admu, crews2023, by = 'Field_Office') %>% 
+  dplyr::drop_na(CrewName) 
 
-total_area <- crew_areas %>% 
-  group_by(CrewName) %>% 
-  st_union %>% 
-  st_bbox %>% 
-  st_as_sfc() %>% 
-  st_as_sf() %>% 
-  rename(geometry = x)
+# creating a bonding box over the field offices
+total_area <- crew_areas |> 
+  dplyr::group_by(CrewName) |> 
+  sf::st_union() |> 
+  sf::st_bbox() |> 
+  sf::st_as_sfc() |> 
+  sf::st_as_sf() |> 
+  dplyr::rename(geometry = x)
 
-st_bbox(crew_areas)
+# combine the field(s) office names with the polygon bounding box
+bboxes <- dplyr::bind_cols(sf::st_drop_geometry(crew_areas), total_area) %>% 
+  sf::st_as_sf() %>% 
+  sf::st_transform(sf::st_crs(track_pts))
+
+# identify points within the crews working areas 
+fid_areas <- st_intersection(track_pts, bboxes) |>  
+  sf::st_drop_geometry() |> 
+  dplyr::group_by(track_fid) |> 
+  dplyr::count(CrewName) %>% 
+  dplyr::slice_max(n) 
+
+## split out track_fid 
+
+track_pts_fid <- dplyr::left_join(fid_areas, track_pts)
+
+split_tracks <- split(
+  track_pts_fid, f = list(track_pts_fid$track_fid, track_pts_fid$CrewName) )
+
+## subset to the potential crew associated with the track
+
+
+ggplot() +  
+  geom_sf(data = total_area) +  
+  geom_sf(data = tracks)  
 
 rm(crew_areas)
+
+
+
