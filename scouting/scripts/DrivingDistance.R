@@ -70,6 +70,59 @@ fid_areas <- st_intersection(track_pts, bboxes) |>
 track_pts_fid <- dplyr::left_join(fid_areas, track_pts) |>
   sf::st_as_sf()
 
+## generate tracks for each day. 
+
+track_pts_fid <- track_pts_fid %>% 
+  mutate(time = lubridate::ymd_hms(time), 
+         date = lubridate::yday(time), .after = 'time')
+
+# determine whether crew worked 4-10 or 8-6 
+
+#' Number the weeks of the year
+dayNamesFN <- function(){
+  yearDAYS <- if(lubridate::leap_year(Sys.Date()) == F) {
+    365
+  } else {
+    366
+  }
+
+  dayNms <- data.frame(
+    DOY = 1:yearDAYS, 
+    Weekday = weekdays( as.Date(1:yearDAYS, origin = paste(
+      as.numeric(format(Sys.Date(), "%Y")) - 1, 
+      '12', '31', sep = '-')) )
+  )
+
+  weekNO <- c(rep(1, times = min(which( dayNms$Weekday == 'Monday')) -1), 
+     rep(2:52, each = 7))
+  weekNO <- c(weekNO, rep(max(weekNO + 1), times =  yearDAYS - length(weekNO)))
+  
+  dayNms <- cbind(dayNms, weekNO)
+  return(dayNms)
+}
+dayNames <- dayNamesFN()
+
+## crews which worked any 8-6 will have worked a weekend - have they?
+
+if (all ( weekdays(track_pts_fid$time) %in% c('Saturday', 'Sunday')) == FALSE){
+  
+  dayNames[c('DOY', 'weekNO'),]
+  } else { print('run 8-6 set up function')
+}
+
+
+dayNames[,c('DOY', 'weekNO')]
+
+
+
+
+
+
+
+
+
+
+
 ## subset to the potential crew associated with the track
 
 ob <- st_intersects(tracks, track_pts_fid)
@@ -78,6 +131,7 @@ ob <- data.frame(
   Track = gsub("\\(|\\).*$", "", names(unlist(ob))), 
   Point = unlist(ob)
   ) 
+
 
 cbind(ob, track_pts_fid)
 
