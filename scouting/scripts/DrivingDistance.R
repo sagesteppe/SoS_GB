@@ -116,7 +116,7 @@ fromTO <- function(x){
 
 ## crews which worked any 8-6 will have worked a weekend - have they?
 
-if (all ( weekdays(x$time) %in% c('Saturday', 'Sunday')) == FALSE){
+if (all ( weekdays(x$time) == 'Saturday') == FALSE){
   return(fromTO(x))
   } else { print('run 8-6 set up function')
 }
@@ -125,28 +125,46 @@ ob <- fromTO(test)
 
 
 
-weekdays(track_pts_fid$time) %in% c('Thursday', 'Friday')
+fake_dat <- data.frame(
+  date = as.Date(c(142:145, 150:157, 163:165, 171:174, 177:180),
+                 origin = '2022-12-31')) %>% 
+  mutate(DOY = lubridate::yday(date))
 
-eightSIX_fromTO <- function(x){
+eightSIX_fromTO <- function(x, date){
   
-  weekdays(x$time) %in% c('Thursday', 'Friday')
+  dayNames <- dayNamesFN()
   
-  x1 <- dplyr::left_join(x, dayNames, by = c('date' = 'DOY')) 
+  x1 <- sf::st_drop_geometry(x) 
+  
+  travel_days <- sort(unique(x1[,date]))
+  travel_bouts <- split(travel_days, cumsum(c(1, diff(travel_days) != 1)))
+  long_bouts <- travel_bouts[ lapply(travel_bouts, length) > 5 ]
+  
+  eightSIX_s <- data.frame(From = lapply(X = long_bouts, FUN = min) )
+  eightSIX_e <- data.frame(To = lapply(X = long_bouts, FUN = max))
+  eightSIX <- cbind(eightSIX_s, eightSIX_e)
+  colnames(eightSIX) <- c('From', 'To') 
+  eightSIX <- mutate(eightSIX, 
+    Trip = paste(format( min(From), '%m/%d'), '-', format(max(To), '%m/%d'))
+    )
+  
+  short_bouts <- travel_bouts[lapply(travel_bouts, length) < 5]
+  other_s <- data.frame(From = lapply(X = short_bouts, FUN = min) )
+  other_e <- data.frame(To = lapply(X = short_bouts, FUN = max))
+  
+  return(short_bouts)
+#  x1 <- dplyr::left_join(x, dayNames, by = c('date' = 'DOY')) 
 }
 
-# these the 'weekend days'
-track_pts_fid[ ( weekdays(track_pts_fid$time) %in% c('Thursday', 'Friday') ), ]
 
-
-arrange(track_pts_fid, date)
+r <- eightSIX_fromTO(fake_dat,  'date')
 
 
 
 
 
 
-## subset to the potential crew associated with the track
-
+# spatial match 
 ob <- st_intersects(tracks, track_pts_fid)
 names(ob) <- tracks$name
 ob <- data.frame(

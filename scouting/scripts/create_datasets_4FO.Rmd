@@ -25,7 +25,6 @@ fo_boundary <- st_read(file.path(p_g_gen, geo[grep('GB_FieldO', geo)]), quiet = 
 seedzones <- st_read(file.path(p_g_gen, geo[grep('WWETAC', geo)]), quiet = T)
 fire <- st_read(file.path(p_g_gen, geo[grep('FIRE', geo)]), quiet = T)
 
-
 ensure_multipolygons <- function(X) {
     tmp1 <- tempfile(fileext = ".gpkg")
     tmp2 <- tempfile(fileext = ".gpkg")
@@ -303,7 +302,7 @@ targets <- read.csv(file.path(p_dat, 'target_taxa_2023.csv')) %>%
 
 crew_list <- fo_boundary %>% 
   st_transform(5070) %>% 
-  split(., .$Crew)
+  split(., .$Crew) 
 blm <- st_transform(blm , 5070)
 usfs <- st_transform(usfs, 5070)
 scout <- st_transform(scout, 5070)
@@ -316,7 +315,7 @@ usfs <- st_transform(usfs, 5070)
 blm <- st_make_valid(blm)
 seedzones <- st_make_valid(seedzones)
 
-crew_list <- crew_list[2:5]
+crew_list <- crew_list
 
 lapply(crew_list, FUN = project_maker, target_species = targets,
        blm_surf = blm, 
