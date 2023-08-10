@@ -102,21 +102,43 @@ dayNamesFN <- function(){
 }
 dayNames <- dayNamesFN()
 
+#' Work Week/Hitch start and end dates
+fromTO <- function(x){
+  
+  dayNames <- dayNamesFN()
+  
+  x1 <- dplyr::left_join(x, dayNames, by = c('date' = 'DOY')) |>
+    dplyr::group_by(weekNO) |>
+    dplyr::mutate(Trip = paste(format( min(time), '%m/%d'), '-', format(max(time), '%m/%d')))
+  
+  return(x1s)
+}
+
 ## crews which worked any 8-6 will have worked a weekend - have they?
 
-if (all ( weekdays(track_pts_fid$time) %in% c('Saturday', 'Sunday')) == FALSE){
-  
-  dayNames[c('DOY', 'weekNO'),]
+if (all ( weekdays(x$time) %in% c('Saturday', 'Sunday')) == FALSE){
+  return(fromTO(x))
   } else { print('run 8-6 set up function')
 }
 
-
-dayNames[,c('DOY', 'weekNO')]
-
+ob <- fromTO(test)
 
 
 
+weekdays(track_pts_fid$time) %in% c('Thursday', 'Friday')
 
+eightSIX_fromTO <- function(x){
+  
+  weekdays(x$time) %in% c('Thursday', 'Friday')
+  
+  x1 <- dplyr::left_join(x, dayNames, by = c('date' = 'DOY')) 
+}
+
+# these the 'weekend days'
+track_pts_fid[ ( weekdays(track_pts_fid$time) %in% c('Thursday', 'Friday') ), ]
+
+
+arrange(track_pts_fid, date)
 
 
 
