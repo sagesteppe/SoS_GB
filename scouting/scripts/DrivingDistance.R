@@ -133,6 +133,10 @@ fake_dat <- data.frame(
 eightSIX_fromTO <- function(x, date){
   
   dayNames <- dayNamesFN()
+  bookend_dates <- function(x, y){y[ which.min(abs(y$DOY - x)), 'DOY'] }
+  ydoy2date <- function(x){as.Date(x, origin = paste(
+    as.numeric(format(Sys.Date(), "%Y")) - 1, 
+    '12', '31', sep = '-')) }
   
   x1 <- sf::st_drop_geometry(x) 
   
@@ -151,16 +155,27 @@ eightSIX_fromTO <- function(x, date){
   short_bouts <- travel_bouts[lapply(travel_bouts, length) < 5]
   other_s <- data.frame(From = lapply(X = short_bouts, FUN = min) )
   other_e <- data.frame(To = lapply(X = short_bouts, FUN = max))
+  bankers <- data.frame(cbind(do.call("c", other_s), do.call("c", other_e)))
+  colnames(bankers) <- c('From', 'To')
+  bankers$From <- as.Date(bankers$From)
+  bankers$To <- as.Date(bankers$To)
+    
+  MON <- filter(dayNames, Weekday == 'Monday')
+  FRI <- filter(dayNames, Weekday == 'Friday')
   
-  return(short_bouts)
+  bankers$From <- vapply(X = yday(bankers[,'From']), FUN = op, y = MON, numeric(1))
+  bankers$To <- vapply(X = yday(bankers[,'To']), FUN = op, y = FRI, numeric(1))
+  
+  bankers <- mutate(bankers, 
+                    across(.cols = From:To, ydoy2date),
+                     Trip = paste(format( From, '%m/%d'), '-', format(To, '%m/%d'))
+  )
+  
+  return(x1)
 #  x1 <- dplyr::left_join(x, dayNames, by = c('date' = 'DOY')) 
 }
 
-
-r <- eightSIX_fromTO(fake_dat,  'date')
-
-
-
+out <- eightSIX_fromTO(fake_dat,  'date')
 
 
 
