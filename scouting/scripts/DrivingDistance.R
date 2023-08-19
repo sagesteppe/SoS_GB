@@ -107,4 +107,35 @@ ggplot() +
 rm(crew_areas)
 
 
+# need to snap the lines to nearest roads
+library(tigris)
+options(tigris_use_cache = TRUE)
 
+
+us_states <- tigris::states(cb = T) |>
+  sf::st_transform(sf::st_crs(total_area))
+us_states <- us_states[
+  lengths( sf::st_intersects(us_states, total_area) ) > 0 ,]  |>
+  sf::st_drop_geometry() |>
+  dplyr::pull(STUSPS)
+
+us_counties <- tigris::counties(cb = T, us_states) |>
+  sf::st_transform(sf::st_crs(total_area))
+us_counties <- us_counties[
+  lengths( sf::st_intersects(us_counties, total_area) ) > 0 , c('STATEFP', 'COUNTYFP')]  |>
+  sf::st_drop_geometry() |>
+  tibble::rowid_to_column(var = 'ID')
+
+us_roads <- Map(function(STATEFP, COUNTYFP) 
+  tigris::roads(state = STATEFP, county = COUNTYFP), us_counties$STATEFP, us_counties$COUNTYFP)
+
+us_roads <- dplyr::bind_rows(us_roads)
+us_roads_cp <- us_roads # for developement
+object.size(us_roads_cp)
+
+us_roads_cp <- sf::st_simplify(us_roads_cp)
+
+u <- filter(us_roads_cp, RTTYP %in% c('U', 'I', 'S', 'C'))
+
+ggplot() +
+  geom_sf(data = u)
