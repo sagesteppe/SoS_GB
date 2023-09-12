@@ -1,0 +1,85 @@
+---
+title: "Generate List of Prospective Ecosites for Collections"
+author: "steppe"
+date: '2023-09-12'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r, echo = F}
+knitr::opts_chunk$set(
+  echo = FALSE,  
+  message = FALSE, 
+  warning = FALSE 
+)
+```
+
+```{r Load Libraries, echo = F, warning = F, message = F}
+library(tidyverse)
+library(sf)
+library(terra)
+library(FedData)
+```
+
+```{r import data for verifying ESDs of site locations}
+
+d <- read.csv('Collection_2023/Great_Basin_X_Utah_Seed_Collection_2023_0.csv') %>% 
+  select(Object.ID = ObjectID, Latitude, Ref.NO = Seed.Collection.Reference.Number,
+         Longitude, Slope = Approximate.Slope.in.Degrees, Aspect, Soil.Texture, Soil.Color = SOIL_COLOR, 
+         Collectors = Collector.Name.s., Associated.Species = Associated.Species.List) %>% 
+  drop_na('Longitude') %>% 
+  st_as_sf(coords = c('Longitude', 'Latitude'), crs = 4326) %>% 
+  filter(!str_detect(Ref.NO, 'FWS0800')) %>% 
+  mutate(
+    Soil.Texture = na_if(Soil.Texture, 'Other'),
+    Soil.Color = na_if(Soil.Color, 'Edit')
+    )
+
+```
+
+```{r export spatial query}
+dspat <- d %>% 
+  st_transform(5070) %>% 
+  vect() %>% 
+  buffer(width = 75, quadsegs = 1) 
+xy <- crds(dspat)
+dspat <- spin(dspat, 45, xy[,1], xy[,2])
+
+dspat <- st_as_sf(dspat) %>% 
+  st_transform(4269) %>% 
+  select(Object.ID, Ref.NO)
+
+states <- tigris::states() %>% 
+  filter(STUSPS %in% c('NV', 'OR', 'UT'))
+
+ggplot() +
+  geom_sf(data = states) +
+  geom_sf(data = d)
+
+# dir.create('data/CollectionSites') # don't bother WSS still sucks
+# st_write(dspat, 'data/CollectionSites/CollectionSites.shp')
+# zip(zipfile = 'data/CollectionSites.zip', files = 'data/CollectionSites')
+
+rm(xy, states)
+```
+
+```{r download sssurgo using feddata}
+
+dspat_p <- st_bbox(dspat) %>% 
+  st_as_sfc() %>% 
+  st_as_sf()
+
+get_ssurgo(template = dspat_p, label = 'GreatBasin', raw.dir = '../geodata/SSURGO/raw',
+           extraction.dir = '../geodata/SSURGO/final')
+
+```
+
+```{r export copies}
+
+d %>% 
+  st_drop_geometry() %>% 
+  write.csv(., 'data/SiteCharacteristics.csv', row.names = F)
+
+```
+
