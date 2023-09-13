@@ -1,0 +1,150 @@
+---
+title: "generate herbarium labels crews"
+author: "steppe"
+date: "2023-09-13"
+output: html_document
+---
+
+```{r setup}
+# devtools::install_github('sagesteppe/BarnebyLives')
+library(tidyverse)
+library(BarnebyLives)
+library(googlesheets4)
+library(textclean)
+```
+
+An alternative format for loading data is through Google Sheets. 
+This can facilitate data-sharing and standardization by many collectors in different locations. 
+This is the source of data which was used during beta-testing for development. 
+
+We will use googlesheets4, which is a part of the tidyverse, but I do not think installs by default with the remainder of the 'verse. 
+We will feed in the last part of the URL as the link to the path. 
+If this is your first time using googlesheets4, it will walk you through a few steps to log into your google account so you can access data securely. 
+After that googlesheets4 is actually really straightforward to use, note that I use the 'drive_auth' function here. 
+This function makes non-interactive use easy, it is only used here because the vignette renders as a non-interactive format. 
+
+```{r load through google sheets}
+
+googledrive::drive_auth("reedbenkendorf27@gmail.com")
+# read in data from the sheet to process
+data <- read_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M', 
+                    sheet = 'Data Entry') %>% 
+  mutate(UNIQUEID = paste0(Primary_Collector, Collection_number)) %>% 
+  data.frame()
+
+```
+
+
+### only process data which have not yet run through the pipeline. 
+
+BarnebyLives takes a little bit of time to run, but it also requires the usage of Google Developer credits for 
+
+```{r determine which data has been processed, eval = F}
+
+# determine whether these data have already been processed by the script, using
+# a unique combination of collection name and collection code. 
+processed <- read_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M',
+                        sheet = 'Processed') %>% 
+  select(Collection_number, Primary_Collector) %>% 
+  mutate(UNIQUEID = paste0(Primary_Collector, Collection_number))
+
+data <- filter(df, ! UNIQUEID %in% processed$UNIQUEID ) %>% 
+  select(-UNIQUEID)
+
+rm(processed, df)
+```
+
+
+```{r Run pipeline with all steps and benchmarking, eval = F}
+
+data <- dms2dd(data)
+
+time_autofill_checker <- system.time({ # has the spreadsheet software auto-incremented coordinate values?
+  data <- autofill_checker(data)
+})
+
+time_coords2sf <- system.time({ # create a spatial (simple features) object
+  data <- coords2sf(data)
+})
+
+p2geo <- '/media/steppe/hdd/Barneby_Lives-dev/geodata'
+
+time_political_grabber <- system.time({ # grab political information for collection
+  data <- political_grabber(data, y = 'Collection_number', path = p2geo)
+})
+
+time_physical_grabber <- system.time({ # grab sites physical information
+  data <- physical_grabber(data, path = p2geo)
+})
+
+time_site_writer <- system.time({ # write site location notes
+  data <- site_writer(data, path = p2geo)
+})
+
+p2tax <- '/media/steppe/hdd/Barneby_Lives-dev/taxonomic_data'
+
+# time_spell_check <- system.time({ # ensure appropriate spellings of the species
+#   data <- spell_check(data, path = p2tax)
+# })
+
+time_family_spell_check <- system.time({ # ensure appropriate spelling of the family
+  data <- family_spell_check(data, path = p2tax)
+})
+
+time_author_check <- system.time({ # ensure authorities are spelled-noted correctly
+  data <- author_check(data, path = p2tax)
+})
+
+time_associate_dropper <- system.time({ # remove the focal taxon from the noted associates
+  data <- associate_dropper(data, 'Full_name')
+})
+
+time_date_parser <- system.time({ # parse dates into museum formats
+  data <- date_parser(data, coll_date = 'Date_digital')
+})
+
+rm(p2geo, p2tax)
+```
+
+
+```{r Run the API services, eval = F}
+
+# we keep these processes in a discrete chunk set not to evaluate so as to not overwhelm
+# the services. Google does charge if the number of queries per month is high.
+
+time_powo_searcher <- system.time({ # search for synonyms from plants of the world online
+  
+ names <- sf::st_drop_geometry(data) %>% 
+   pull(Full_name)
+
+ pow_res <- lapply(names,
+       powo_searcher) %>% 
+       bind_rows()
+ data <- bind_cols(data, pow_res)
+
+ rm(names, pow_res)
+}) # has been run
+
+time_directions_grabber <- system.time({ # write directions to sites
+  SoS_gkey = Sys.getenv("Sos_gkey")
+  data <- directions_grabber(data, api_key = SoS_gkey)
+})
+
+```
+
+
+```{r write out data to googlesheets4}
+
+# first ensure the columns are in the same order as google sheets
+
+processed <- read_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M',
+                        sheet = 'Processed - Examples') %>% 
+  colnames() 
+
+df <- sf::st_drop_geometry(data) %>% 
+  select(any_of(processed))
+
+write_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M', 
+             sheet = 'Processed', data = df)
+
+```
