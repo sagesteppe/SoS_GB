@@ -99,20 +99,29 @@ rm(all_na, data, crews)
 ############### QC for Scouting ##################
 
 long <- 'have_you_submitted_the_associated_collection_equation_form_s_and_sos_collection_form_and_are_they_in_your_outbox'
-manual_cols <- c('objectid', 'coll_id', 'nrcs_plants_code', 'idiq', 'scout_date', 
+manual_cols <- c('objectid', 'coll_id', 'nrcs_plants_code', 'idiq', 'scout_date', 'elevation_ft',
                  'date', 'estimated_population_size', 'number_of_acres', 'future_potential', 
                  'subunit', 'area_within_subunit', 'state', 'county', 'seed_zone', 
                  'did_you_collect_a_voucher_specimen', 'voucher_number',
                  'collection_number', 'equation_form_submitted', 'x', 'y')
 
-# idiq_spp <- 
+idiq_spp <- read.csv('../scouting/data/target_taxa_2023.csv', na.strings = "") %>% 
+  filter(Group %in% c('Grass', 'Forb')) %>% 
+  select(USDA.Code, Universal:ELFO) %>% 
+  pivot_longer(Universal:ELFO) %>% 
+  drop_na() %>% 
+  filter(name != 'ELFO', ! USDA.Code %in% c('', '')) %>% 
+  distinct(USDA.Code) %>% 
+  pull(USDA.Code)
+
+idiq_spp <- c(idiq_spp, 'SPPA2')
 
 scouting <- read.csv('data/GreatBasin_Scouting_2023_1.csv', na.strings = "") %>% 
   clean_names() %>% 
   rename(equation_form_submitted = all_of(long)) %>% 
   filter(!str_detect(coll_id, 'FWS|FS')) %>% 
   select(all_of(manual_cols)) %>% 
-  st_as_sf(coords = c('x', 'y'), crs = 4326) %>% 
+  st_as_sf(coords = c('x', 'y'), crs = 4326, remove = F) %>% 
   st_transform(4269)
 
 rm(long, manual_cols)
@@ -137,11 +146,34 @@ seed_zones <- st_read('../geodata/WWETAC_STZ/GB_2013_revised_reduced.shp', quiet
     BOWER_SZ = str_remove(BOWER_SZ, 'Deg. F. ')
   )
 
+
 scouting1 <- st_join(scouting, seed_zones)
 
-rm(states, counties, seed_zones)
+field_office <- sf::st_read('../geodata/ADMU/GRT_BASIN/GB_FieldO.shp', quiet = T) %>% 
+  mutate(Field_Off = str_remove(Field_Off, '^Lakeview Distict|^Burns |^Lakeview |^Vale'))
+allotment <- sf::st_read(
+  '../geodata/ALLOT/BLM_Natl_Grazing_Allotment_Polygons.shp', quiet = T) %>% 
+  select(ALLOT_NAME) %>% 
+  st_make_valid()
 
-scouting1 <- scouting1 %>% 
+outro <- st_join(scouting2, field_office)
+outro <- st_join(scouting2, allotment)
+
+# tried to run this only if NA, but tricky at end of Monday afternoon; computes on them.
+usgs_elev <- function(x){
+  elev <- elevatr::get_elev_point(x, src = "epqs")[,'elevation'] |>
+    sf::st_drop_geometry() |>
+    dplyr::mutate(elevation = round(elevation * 3.28084)) |>
+    dplyr::pull(elevation)
+  return(elev)
+}
+
+scouting1$USGS_FT <- usgs_elev(scouting1)
+
+rm(states, counties, seed_zones, usgs_elev)
+
+scouting2 <- scouting1 %>% 
+  rowwise() %>%  # needer for elevation retrievals
   mutate(
     
     # values in look up vectors
@@ -153,12 +185,11 @@ scouting1 <- scouting1 %>%
     'state-FLAG' = if_else(state == STATE_CB, NA, paste0('ERROR: "', STATE_CB, '" is answer')),
     'county-FLAG' = if_else(county == COUNTY_CB, NA, paste0('ERROR: "', COUNTY_CB, '" is answer')),
     'voucher_collect-FLAG' = if_else(future_potential == 'Yes' & is.na(did_you_collect_a_voucher_specimen), 'Error: "No"', NA),
-    'seed_zone-FLAG' = if_else(seed_zone != BOWER_SZ, paste0('ERROR: "', BOWER_SZ, '" is answer'), NA)
+    'seed_zone-FLAG' = if_else(seed_zone != BOWER_SZ, paste0('ERROR: "', BOWER_SZ, '" is answer'), NA),
     
-    # idiq - import target species codes
-    # seed zone - join
-) #%>% 
-  
-  select(-STATE_CB, -COUNTY_CB, -BOWER_SZ)
+    'actual_idiq' = if_else(nrcs_plants_code %in% idiq_spp, 'Yes', 'No'),
+    'idiq-FLAG' = if_else(idiq == actual_idiq, NA, paste0('ERROR: "', actual_idiq, '" is answer')),
+    'elevation-FLAG' = if_else(is.na(elevation_ft), paste0('ERROR: "', USGS_FT, '" is answer'), NA)
+    ) %>% 
+  select(-STATE_CB, -COUNTY_CB, -BOWER_SZ, -actual_idiq)
 
-  
