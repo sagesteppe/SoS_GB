@@ -3,6 +3,7 @@ setwd('/media/steppe/ExternalHD/SoS_GB/QAQC')
 library(tidyverse)
 library(sf)
 library(janitor)
+library(tigris)
 
 manual_cols <- c(
   'ObjectID', 'COLL_ID', 'Collection.Number', 'Seed.Collection.Reference.Number',
@@ -95,4 +96,69 @@ mapply(FUN = write.csv, data, file = paste0('results/', names(data), '.csv'), ro
 rm(all_na, data, crews)
 
 
+############### QC for Scouting ##################
 
+long <- 'have_you_submitted_the_associated_collection_equation_form_s_and_sos_collection_form_and_are_they_in_your_outbox'
+manual_cols <- c('objectid', 'coll_id', 'nrcs_plants_code', 'idiq', 'scout_date', 
+                 'date', 'estimated_population_size', 'number_of_acres', 'future_potential', 
+                 'subunit', 'area_within_subunit', 'state', 'county', 'seed_zone', 
+                 'did_you_collect_a_voucher_specimen', 'voucher_number',
+                 'collection_number', 'equation_form_submitted', 'x', 'y')
+
+# idiq_spp <- 
+
+scouting <- read.csv('data/GreatBasin_Scouting_2023_1.csv', na.strings = "") %>% 
+  clean_names() %>% 
+  rename(equation_form_submitted = all_of(long)) %>% 
+  filter(!str_detect(coll_id, 'FWS|FS')) %>% 
+  select(all_of(manual_cols)) %>% 
+  st_as_sf(coords = c('x', 'y'), crs = 4326) %>% 
+  st_transform(4269)
+
+rm(long, manual_cols)
+
+states <- tigris::states() %>% 
+  select(STATE_CB = NAME) 
+scouting <- st_join(scouting, states)
+
+counties <- tigris::counties(state = scouting$STATE_CB) %>% 
+  select(COUNTY_CB = NAME)
+scouting <- st_join(scouting, counties)
+
+seed_zones <- st_read('../geodata/WWETAC_STZ/GB_2013_revised_reduced.shp', quiet = T) %>% 
+  select(BOWER_SZ = seed_zone) %>% 
+  mutate(
+    BOWER_SZ = str_replace(BOWER_SZ, '/ 6 - 12', '/ semi-arid'),
+    BOWER_SZ = str_replace(BOWER_SZ, '/ 3 - 6', '/ semi-humid'),
+    BOWER_SZ = str_replace(BOWER_SZ, '/ 10 - 15', '/ semi-arid'),
+    BOWER_SZ = str_replace(BOWER_SZ, '/ 12 - 30', '/ arid'),
+    BOWER_SZ = str_replace(BOWER_SZ, '/ 2 - 3', '/ humid'),
+    BOWER_SZ = str_replace(BOWER_SZ, '/ < 2', '/ very humid'),
+    BOWER_SZ = str_remove(BOWER_SZ, 'Deg. F. ')
+  )
+
+scouting1 <- st_join(scouting, seed_zones)
+
+rm(states, counties, seed_zones)
+
+scouting1 <- scouting1 %>% 
+  mutate(
+    
+    # values in look up vectors
+    'voucher_number-FLAG' = if_else(str_length(voucher_number) > 1, 
+                                    'ERROR - This values reflects the # of duplicates', NA) ,
+    # hard to imagine someone collecting more than 9 dupes
+    'collection_number-FLAG' = if_else(is.na(voucher_number) != is.na(collection_number),
+                                       'WARNING - Vouchers or Collection number missing!', NA),
+    'state-FLAG' = if_else(state == STATE_CB, NA, paste0('ERROR: "', STATE_CB, '" is answer')),
+    'county-FLAG' = if_else(county == COUNTY_CB, NA, paste0('ERROR: "', COUNTY_CB, '" is answer')),
+    'voucher_collect-FLAG' = if_else(future_potential == 'Yes' & is.na(did_you_collect_a_voucher_specimen), 'Error: "No"', NA),
+    'seed_zone-FLAG' = if_else(seed_zone != BOWER_SZ, paste0('ERROR: "', BOWER_SZ, '" is answer'), NA)
+    
+    # idiq - import target species codes
+    # seed zone - join
+) #%>% 
+  
+  select(-STATE_CB, -COUNTY_CB, -BOWER_SZ)
+
+  
