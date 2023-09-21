@@ -84,7 +84,7 @@ time_site_writer <- system.time({ # write site location notes
 p2tax <- '/media/steppe/hdd/Barneby_Lives-dev/taxonomic_data'
 
 time_spell_check <- system.time({ # ensure appropriate spellings of the species
-   data_sp <- spell_check(c(data$Full_name), path = p2tax)
+   data <- spell_check(data = data, column = 'Full_name', path = p2tax)
 })
 
 time_family_spell_check <- system.time({ # ensure appropriate spelling of the family
@@ -95,15 +95,28 @@ time_author_check <- system.time({ # ensure authorities are spelled-noted correc
   data <- author_check(data, path = p2tax)
 })
 
+time_USDA_plants_lkp <- system.time({
+  data <- USDA_plants_lkp(data, 'Vegetation', path = p2tax)
+})
+
 time_associate_dropper <- system.time({ # remove the focal taxon from the noted associates
   data <- associate_dropper(data, 'Full_name')
 })
 
 time_date_parser <- system.time({ # parse dates into museum formats
-  data <- date_parser(data, coll_date = 'Date_digital')
+  data <- date_parser(data, coll_date = 'Date_digital', det_date = 'Determined_date')
 })
 
 rm(p2geo, p2tax)
+```
+
+
+```{r accept or reject changes, eval = F}
+
+data <- data %>% 
+  mutate(Full_name =  if_else(Full_name == 'Helianthus annuuss', SpellCk.scientificName, Full_name)) %>% 
+  select(-starts_with('SpellCk'), -'Match')
+
 ```
 
 
@@ -125,17 +138,32 @@ time_powo_searcher <- system.time({ # search for synonyms from plants of the wor
  rm(names, pow_res)
 }) # has been run
 
+data <- data %>% 
+  sf::st_as_sf()
 time_directions_grabber <- system.time({ # write directions to sites
   SoS_gkey = Sys.getenv("Sos_gkey")
-  data1 <- directions_grabber(data[1:35,], api_key = SoS_gkey)
+  data1 <- directions_grabber(data[1:50,], api_key = SoS_gkey)
+  data2 <- directions_grabber(data[52:67,], api_key = SoS_gkey)
+  data <- bind_rows(data1, data[51,], data2, data[51,])
 })
 
+rm(data2, data1)
+```
 
- data2 <- directions_grabber(data[36:45,], api_key = SoS_gkey)
- data3 <- directions_grabber(data[46:50,], api_key = SoS_gkey)
- data4 <- directions_grabber(data[52:67,], api_key = SoS_gkey)
+```{r accept changes from BL}
 
-data <- bind_rows(data1, data2, data3, data[51,], data4)
+data <- data %>% 
+  mutate(
+    Epithet = POW_Epithet,
+    Genus = POW_Genus,
+    Full_name = POW_Full_name,
+    Name_authority = POW_Name_authority, 
+    Family = POW_Family,
+    Infrarank = POW_Infrarank,
+    Infraspecies = POW_Infraspecies,
+    Slope = slope, 
+    Aspect = aspect
+  )
 
 ```
 
@@ -144,14 +172,39 @@ data <- bind_rows(data1, data2, data3, data[51,], data4)
 
 # first ensure the columns are in the same order as google sheets
 
-processed <- read_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M',
+processed_cols <- read_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M',
                         sheet = 'Processed - Examples') %>% 
   colnames() 
 
 df <- sf::st_drop_geometry(data) %>% 
-  select(any_of(processed))
+  select(any_of(processed_cols))
 
 write_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M', 
              sheet = 'Processed', data = df)
 
+```
+
+```{r eval = F}
+
+processed <- read_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M',
+                        sheet = 'Processed')
+
+df <- processed %>% 
+  mutate(latitude_dd = round(latitude_dd, digits = 4), 
+         longitude_dd = round(longitude_dd, digits = 4)) %>% 
+  sf::st_drop_geometry(data) %>% 
+  select(any_of(processed_cols)) %>% 
+  arrange(Primary_Collector, Collection_number)
+
+write_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M', 
+             sheet = 'Processed', data = df)
+```
+
+```{r load reed and save locally, eval = F}
+data <- read_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M', 
+                    sheet = 'Processed - Examples') %>% 
+  mutate(UNIQUEID = paste0(Primary_Collector, Collection_number)) %>% 
+  data.frame()
+
+write.csv(data, '/media/steppe/ExternalHD/SoS_GB/herbarium_collections/results/collections-Reed.csv')
 ```

@@ -100,7 +100,7 @@ rm(all_na, data, crews)
 
 long <- 'have_you_submitted_the_associated_collection_equation_form_s_and_sos_collection_form_and_are_they_in_your_outbox'
 manual_cols <- c('objectid', 'coll_id', 'nrcs_plants_code', 'idiq', 'scout_date', 'elevation_ft',
-                 'date', 'estimated_population_size', 'number_of_acres', 'future_potential', 
+                 'date', 'taxa', 'estimated_population_size', 'number_of_acres', 'future_potential', 
                  'subunit', 'area_within_subunit', 'state', 'county', 'seed_zone', 
                  'did_you_collect_a_voucher_specimen', 'voucher_number',
                  'collection_number', 'equation_form_submitted', 'x', 'y')
@@ -146,8 +146,7 @@ seed_zones <- st_read('../geodata/WWETAC_STZ/GB_2013_revised_reduced.shp', quiet
     BOWER_SZ = str_remove(BOWER_SZ, 'Deg. F. ')
   )
 
-
-scouting1 <- st_join(scouting, seed_zones)
+scouting <- st_join(scouting, seed_zones)
 
 field_office <- sf::st_read('../geodata/ADMU/GRT_BASIN/GB_FieldO.shp', quiet = T) %>% 
   mutate(Field_Off = str_remove(Field_Off, '^Lakeview Distict|^Burns |^Lakeview |^Vale'))
@@ -156,8 +155,10 @@ allotment <- sf::st_read(
   select(ALLOT_NAME) %>% 
   st_make_valid()
 
-outro <- st_join(scouting2, field_office)
-outro <- st_join(scouting2, allotment)
+scouting <- st_join(scouting, field_office)
+scouting <- st_join(scouting, allotment)
+
+rm(allotment, field_office)
 
 # tried to run this only if NA, but tricky at end of Monday afternoon; computes on them.
 usgs_elev <- function(x){
@@ -168,12 +169,11 @@ usgs_elev <- function(x){
   return(elev)
 }
 
-scouting1$USGS_FT <- usgs_elev(scouting1)
+scouting$USGS_FT <- usgs_elev(scouting)
 
 rm(states, counties, seed_zones, usgs_elev)
 
-scouting2 <- scouting1 %>% 
-  rowwise() %>%  # needer for elevation retrievals
+scouting <- scouting %>% 
   mutate(
     
     # values in look up vectors
@@ -189,7 +189,38 @@ scouting2 <- scouting1 %>%
     
     'actual_idiq' = if_else(nrcs_plants_code %in% idiq_spp, 'Yes', 'No'),
     'idiq-FLAG' = if_else(idiq == actual_idiq, NA, paste0('ERROR: "', actual_idiq, '" is answer')),
-    'elevation-FLAG' = if_else(is.na(elevation_ft), paste0('ERROR: "', USGS_FT, '" is answer'), NA)
+    'elevation-FLAG' = if_else(is.na(elevation_ft), paste0('ERROR: "', USGS_FT, '" is answer'), NA), 
+    'new_subunit.FLAG' = paste0(Field_Off, ' Field Office, ', str_to_title(ALLOT_NAME)),
+    new_subunit.FLAG = str_remove(new_subunit.FLAG, ', NA$'),
+    x = round(x, digits = 4), 
+    y = round(y, digits = 4)
     ) %>% 
-  select(-STATE_CB, -COUNTY_CB, -BOWER_SZ, -actual_idiq)
+  rename('new_subunit-FLAG' = new_subunit.FLAG) %>% 
+  select(objectid, coll_id, nrcs_plants_code, taxa, x, y,  ends_with('FLAG')) %>% 
+  arrange(coll_id, objectid) %>% 
+  st_drop_geometry() %>% 
+  
+  ## remove rows without any flags right here
+  rowwise() %>% 
+  filter( sum(is.na( across(ends_with('FLAG')))) < 11) %>% 
+  ungroup() %>% 
+  
+  ## drop the flag part of name
+  rename_with( ~ stringr::str_remove(., '-FLAG'), matches("-FLAG"))
+
+scouting <- left_join(scouting, crews, by = 'coll_id')
+scouting <- split(scouting, scouting$Lead)
+
+all_na <- function(x) all(is.na(x))
+
+scouting <- scouting %>% 
+  map(., janitor::remove_empty, which = "cols") 
+
+mapply(FUN = write.csv, scouting, file = paste0('results/', names(scouting), '-scout', '.csv'), row.names = F)
+
+rm(all_na, scouting, crews, idiq_spp)
+
+
+
+########## submitted collection form
 
