@@ -60,13 +60,13 @@ This is very similar to the above, where we wanted to estimate the collection we
 4) perform a cut test on a wet paper towel, or your tape. Recording the number of seeds which are viable, or non-viable.
 5) weigh the entire collection.
 
-1a) sample = 1 gram
-2a) 87 seeds in the sample
-3a) 50 seed subsample
-4a) 26 seeds viable
-5a) collection weighs 554 grams
+1a) sample = 1 gram   
+2a) 87 seeds in the sample   
+3a) 50 seed subsample   
+4a) 26 seeds viable   
+5a) collection weighs 554 grams   
 
-$$ \frac{\text{87 seeds}}{\text{1 gram}}} * \frac{\text{26 viable seeds}}{\text{50 seeds cut}}} * \frac{\text{554 grams}}{\text{454 grams/lb}} $$
+$$ \frac{\text{87 seeds}}{\text{1 gram}} * \frac{\text{26 viable seeds}}{\text{50 seeds cut}} * \frac{\text{554 grams}}{\text{454 grams/lb}} $$
 
 ## Environmental Niche Models the New Arid West Batch
 
