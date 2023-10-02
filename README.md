@@ -66,7 +66,7 @@ This is very similar to the above, where we wanted to estimate the collection we
 4a) 26 seeds viable   
 5a) collection weighs 554 grams   
 
-$$\frac{\text{87 seeds}}{\text{1 gram}} * \frac{\text{26 viable seeds}}{\text{50 seeds cut}}$$
+$$\frac{\text{87 seeds}}{\text{1 gram}} * \frac{\text{26 viable seeds}}{\text{50 seeds cut}} * \text{554 grams} = $$
 
 ## Environmental Niche Models the New Arid West Batch
 
