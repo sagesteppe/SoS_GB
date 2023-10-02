@@ -50,6 +50,24 @@ $$\frac{\text{5434 grams}}{\text{453.5 grams/lb}} = \text{12 pounds seed}$$
 </center>
 
 
+### Estimating the Number of seeds you have collected
+
+This is very similar to the above, where we wanted to estimate the collection weight required to reach an amount of seed. Some of the terms are just slightly rearranged. 
+
+1) To a well mixed collection of seeds, take a sample of seeds. In an operational context this is likely to only be 0.1% of the number of seeds in most circumstances! If possible have the sample be a 'round' weight, or round number of seeds (e.g. 1 gram, or 100 seeds); Doing this can help you see if any math errors occur more quickly.
+2) Weigh, and count the seeds. Do not remove additional debris from the sample! That weight matters.
+3) Take a subsample of roughly 50-100 seeds from the sample to perform cut tests on. Line them up in grids like 5 seeds per row and 10 columns.
+4) perform a cut test on a wet paper towel, or your tape. Recording the number of seeds which are viable, or non-viable.
+5) weigh the entire collection.
+
+1a) sample = 1 gram
+2a) 87 seeds in the sample
+3a) 50 seed subsample
+4a) 26 seeds viable
+5a) collection weighs 554 grams
+
+$$ \frac{\text{87 seeds}}{\text{1 gram}}} * \frac{\text{26 viable seeds}}{\text{50 seeds cut}}} * \frac{\text{554 grams}}{\text{454 grams/lb}} $$
+
 ## Environmental Niche Models the New Arid West Batch
 
 
