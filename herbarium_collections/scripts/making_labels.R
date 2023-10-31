@@ -17,8 +17,14 @@ file.copy(from = file.path(p2libs, folds), '.')
 
 processed <- read_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M',
                         sheet = 'Processed') %>% 
-  drop_na(Vegetation) %>% 
   mutate(UNIQUEID = paste0(gsub(' ', '_', Primary_Collector), Collection_number))
+
+data <- read_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M', 
+                   sheet = 'Processed - Examples') %>% 
+  mutate(UNIQUEID = paste0(Primary_Collector, Collection_number)) %>% 
+  data.frame()
+
+write.csv(data, '../results/collections-Reed.csv', row.names = F)
 
 processed_l <- filter(processed, Primary_Collector == 'Logan Rees')
 write.csv(processed_l, '../results/collections-Logan.csv', row.names = FALSE)
@@ -29,7 +35,8 @@ write.csv(processed_h, '../results/collections-Hailey.csv', row.names = FALSE)
 processed_p <- filter(processed, Primary_Collector == 'Payton Lott')
 write.csv(processed_p, '../results/collections-Payton.csv', row.names = FALSE)
 
-processed_ph <- filter(processed, Primary_Collector == 'Phoenix McFarlane')
+processed_ph <- filter(processed, Primary_Collector == 'Phoenix McFarlane') %>% 
+  mutate(Vegetation = if_else(is.na(Vegetation), 'none listed', Vegetation))
 write.csv(processed_ph, '../results/collections-Phoenix.csv', row.names = FALSE)
 
 # dir.create('../HerbariumLabels/logan/raw')

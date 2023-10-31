@@ -1,4 +1,5 @@
 setwd('/media/steppe/ExternalHD/SoS_GB/QAQC')
+# setwd('/media/sagesteppe/ExternalHD/SoS_GB/QAQC')
 
 library(tidyverse)
 library(sf)
@@ -45,6 +46,9 @@ emp_sz <- c('PLJA', 'POSE', 'ELE5', 'KOMA', 'LECI4', 'PSSP6', 'ALAC4', 'ACHY', '
             'ARTRW8', 'ARTRT', 'ARTRV', 'BRCAM2', 'BRCA5', 'BOGR2', 'HEMU3', 
             'SPPA2',  'SPAM2', 'SPCR')
 
+taxa_lkp <- read.csv('data/USDA_PLANTS.csv') %>% 
+  rename(clean_taxa = Scientific.Name)
+
 data <- data %>% 
   mutate(
     
@@ -69,8 +73,10 @@ data <- data %>%
     # multiple conditions
     'empirical_seed_zone-FLAG' = if_else(nrcs_plants_code %in% emp_sz & is.na(empirical_seed_zone), 'ERROR', NA)
   ) %>% 
-  select(object_id, coll_id, collection_number, seed_collection_reference_number, taxa, ends_with('FLAG')) %>% 
+  select(object_id, coll_id, collection_number, seed_collection_reference_number, nrcs_plants_code, app_taxa = taxa, ends_with('FLAG')) %>% 
   arrange(coll_id, collection_number) %>% 
+  mutate(long = unlist(map(.$geometry,1)),
+         lat = unlist(map(.$geometry,2))) %>% 
   st_drop_geometry() %>% 
   
   ## remove rows without any flags right here
@@ -79,22 +85,29 @@ data <- data %>%
   ungroup() %>% 
 
   ## drop the flag part of name
-  rename_with( ~ stringr::str_remove(., '-FLAG'), matches("-FLAG"))
+  rename_with( ~ stringr::str_remove(., '-FLAG'), matches("-FLAG")) %>% 
+  
+  ## add on the cleaned taxonomic name
+  left_join(., taxa_lkp, by = c('nrcs_plants_code' = 'Symbol')) %>% 
+  relocate(clean_taxa, .after = app_taxa) %>% 
+  mutate(clean_taxa = if_else(clean_taxa == app_taxa, NA, clean_taxa))
 
 rm(collectors,  emp_sz, textures, manual_cols)
 
-data <- left_join(data, crews, by = 'coll_id')
+data <- left_join(data, crews, by = 'coll_id') %>% 
+  arrange(Lead, lat, long) %>% 
+  mutate(across(lat:long, \(x) round(x, 4)))
+
 data <- split(data, data$Lead)
 
 all_na <- function(x) all(is.na(x))
 
 data <- data %>% 
-  map(., janitor::remove_empty, which = "cols") 
+  map(., janitor::remove_empty, which = "cols")
 
 mapply(FUN = write.csv, data, file = paste0('results/', names(data), '.csv'), row.names = F)
 
 rm(all_na, data, crews)
-
 
 ############### QC for Scouting ##################
 
@@ -169,7 +182,8 @@ usgs_elev <- function(x){
   return(elev)
 }
 
-scouting$USGS_FT <- usgs_elev(scouting)
+
+# scouting$USGS_FT <- usgs_elev(scouting)
 
 rm(states, counties, seed_zones, usgs_elev)
 
@@ -189,15 +203,15 @@ scouting <- scouting %>%
     
     'actual_idiq' = if_else(nrcs_plants_code %in% idiq_spp, 'Yes', 'No'),
     'idiq-FLAG' = if_else(idiq == actual_idiq, NA, paste0('ERROR: "', actual_idiq, '" is answer')),
-    'elevation-FLAG' = if_else(is.na(elevation_ft), paste0('ERROR: "', USGS_FT, '" is answer'), NA), 
+  #  'elevation-FLAG' = if_else(is.na(elevation_ft), paste0('ERROR: "', USGS_FT, '" is answer'), NA), 
     'new_subunit.FLAG' = paste0(Field_Off, ' Field Office, ', str_to_title(ALLOT_NAME)),
     new_subunit.FLAG = str_remove(new_subunit.FLAG, ', NA$'),
-    x = round(x, digits = 4), 
-    y = round(y, digits = 4)
     ) %>% 
   rename('new_subunit-FLAG' = new_subunit.FLAG) %>% 
-  select(objectid, coll_id, nrcs_plants_code, taxa, x, y,  ends_with('FLAG')) %>% 
+  select(objectid, coll_id, nrcs_plants_code, app_taxa = taxa, ends_with('FLAG')) %>% 
   arrange(coll_id, objectid) %>% 
+  mutate(long = unlist(map(.$geometry,1)),
+         lat = unlist(map(.$geometry,2))) %>% 
   st_drop_geometry() %>% 
   
   ## remove rows without any flags right here
@@ -206,9 +220,16 @@ scouting <- scouting %>%
   ungroup() %>% 
   
   ## drop the flag part of name
-  rename_with( ~ stringr::str_remove(., '-FLAG'), matches("-FLAG"))
+  rename_with( ~ stringr::str_remove(., '-FLAG'), matches("-FLAG")) %>% 
+  
+  ## add on the cleaned taxonomic name
+  left_join(., taxa_lkp, by = c('nrcs_plants_code' = 'Symbol')) %>% 
+  relocate(clean_taxa, .after = app_taxa) %>% 
+  mutate(clean_taxa = if_else(clean_taxa == app_taxa, NA, clean_taxa))
 
-scouting <- left_join(scouting, crews, by = 'coll_id')
+scouting <- left_join(scouting, crews, by = 'coll_id') %>% 
+  arrange(Lead, lat, long) %>% 
+  mutate(across(lat:long, \(x) round(x, 4)))
 scouting <- split(scouting, scouting$Lead)
 
 all_na <- function(x) all(is.na(x))
