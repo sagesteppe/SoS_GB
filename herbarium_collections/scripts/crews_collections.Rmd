@@ -195,7 +195,7 @@ df <- processed %>%
   sf::st_drop_geometry(data) %>% 
   select(any_of(processed_cols)) %>% 
   arrange(Primary_Collector, Collection_number)
-
+s
 write_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M', 
              sheet = 'Processed', data = df)
 ```

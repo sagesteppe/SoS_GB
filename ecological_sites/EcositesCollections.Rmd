@@ -24,7 +24,7 @@ library(FedData)
 
 ```{r import data for verifying ESDs of site locations}
 
-d <- read.csv('Collection_2023/Great_Basin_X_Utah_Seed_Collection_2023_0.csv') %>% 
+d <- read.csv('Great_Basin_X_Utah_Seed_Collection_2023_0.csv') %>% 
   select(Object.ID = ObjectID, Latitude, Ref.NO = Seed.Collection.Reference.Number,
          Longitude, Slope = Approximate.Slope.in.Degrees, Aspect, Soil.Texture, Soil.Color = SOIL_COLOR, 
          Landform = Land.Form, Geology,
@@ -44,7 +44,7 @@ d <- read.csv('Collection_2023/Great_Basin_X_Utah_Seed_Collection_2023_0.csv') %
 
 fname <- 'data/SOS_Collections.kml'
 dplyr::select(d, Name = Ref.NO) |>
-    sf::st_write(dsn = fname, driver = 'kml', quiet = T)
+    sf::st_write(dsn = fname, driver = 'kml', quiet = T, append = F)
 ```
 
 ```{r export spatial query}
@@ -73,7 +73,7 @@ ggplot() +
 rm(xy, states)
 ```
 
-```{r download ssurgo using feddata}
+```{r download ssurgo using feddata, eval = F}
 
 dspat_p <- st_bbox(dspat) %>%  
   st_as_sfc() %>%  
@@ -89,7 +89,16 @@ VEG <- c('JUOS', 'ARNO4', 'PIMO', 'POSE', 'GUSA2', 'ARCAB3', 'PLJA', 'ACHY', 'EL
          'SAVE4', 'GUSA2', 'PSSP6', 'SABA14', 'ATRIP', 'SPORO', 'FEID', 'KOMA', 'ACTH7', 'LECI4' )
 v <- paste(VEG, collapse = "|")
 
+
+
+done <- read.csv('Great_Basin_X_Utah_Seed_Collection_2023_0.csv', na.strings = "") %>% 
+  select(ObjectID, 
+         ESD ='Ecological.Site.Description..Habitat.Type.and.or.National.Vegetation.Classification') %>% 
+  mutate(Classified = if_else(str_detect(ESD, 'R0|F0'), T, F))
+
 d %>% 
+  left_join(., done, by = c('Object.ID' = 'ObjectID')) %>% 
+  filter(Classified == F) %>% 
   mutate(Longitude = round(st_coordinates(.)[,1], 3), 
          Latitude = round(st_coordinates(.)[,2], 3),
          Veg = str_extract_all(Associated.Species, v, simplify = F),
@@ -101,5 +110,6 @@ d %>%
   write.csv(., 'data/SiteCharacteristics.csv', row.names = F)
   
 
+colnames(d)
 ```
 
