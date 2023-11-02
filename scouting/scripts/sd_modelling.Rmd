@@ -70,6 +70,28 @@ system.time() - start
 
 ```{r model elfo}
 
+read.csv(file.path(p, f[grep('taxa_2023', f)]))[1:56,] %>% 
+  filter(ELFO != 'X') %>% 
+  mutate(across(everything(), ~na_if(.,"")),
+         across(.cols = SE:NW, ~ case_when(
+           Universal == 'X' ~ 'X', 
+           .default = as.character(.x)))) %>% 
+  select(USDA.Code, Species, SE:NW) %>% 
+  pivot_longer(cols = SE:NW, values_to = 'Target', names_to = 'Crew') %>% 
+  drop_na() %>% 
+  rbind(., data.frame(
+    USDA.Code = c( rep(c('SPPA2', 'ASFI', 'CLLU2', 'SPHAE'), each = 4), 'SPCR'), 
+    Species = c( rep(
+      c('Sphaeralcea parvifolia', 'Astragalus filipes', 'Cleome lutea', 'Sphaeralcea'), each = 4),
+      'Sporobolus cryptandrus'),
+    Crew = c( rep(c('SE', 'NE', 'SW', 'NW'),  times = 4), 'NE'),
+    Target = rep('X', times = 17)
+    )) %>% 
+  arrange(Species, Crew) %>% 
+  filter(Species != 'Artemisia tridentata') %>% 
+  write.csv(file.path(p, 'IDIQ_targets.csv'))
+
+
 target_taxa_lkp <- read.csv(file.path(p, f[grep('taxa_2023', f)])) %>% 
   filter(ELFO == 'X') %>% 
   filter(across(c('NE', 'SE', 'SW', 'SE', 'Universal'), ~ str_detect(., 'X', negate = T))) %>% 
