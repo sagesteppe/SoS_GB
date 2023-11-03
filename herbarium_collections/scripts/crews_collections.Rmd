@@ -59,53 +59,31 @@ rm(processed, df)
 
 data <- dms2dd(data)
 
-time_autofill_checker <- system.time({ # has the spreadsheet software auto-incremented coordinate values?
-  data <- autofill_checker(data)
-})
+data <- autofill_checker(data)
 
-time_coords2sf <- system.time({ # create a spatial (simple features) object
-  data <- coords2sf(data)
-})
+data <- coords2sf(data)
 
 p2geo <- '/media/steppe/hdd/Barneby_Lives-dev/geodata'
 
-time_political_grabber <- system.time({ # grab political information for collection
-  data <- political_grabber(data, y = 'UNIQUEID', path = p2geo)
-})
+data <- political_grabber(data, y = 'UNIQUEID', path = p2geo)
 
-time_physical_grabber <- system.time({ # grab sites physical information
-  data <- physical_grabber(data, path = p2geo)
-})
+data <- physical_grabber(data, path = p2geo)
 
-time_site_writer <- system.time({ # write site location notes
-  data <- site_writer(data, path = p2geo)
-})
+data <- site_writer(data, path = p2geo)
 
 p2tax <- '/media/steppe/hdd/Barneby_Lives-dev/taxonomic_data'
 
-time_spell_check <- system.time({ # ensure appropriate spellings of the species
-   data <- spell_check(data = data, column = 'Full_name', path = p2tax)
-})
+data <- spell_check(data = data, column = 'Full_name', path = p2tax)
 
-time_family_spell_check <- system.time({ # ensure appropriate spelling of the family
-  data <- family_spell_check(data, path = p2tax)
-})
+data <- family_spell_check(data, path = p2tax)
 
-time_author_check <- system.time({ # ensure authorities are spelled-noted correctly
-  data <- author_check(data, path = p2tax)
-})
+data <- author_check(data, path = p2tax)
 
-time_USDA_plants_lkp <- system.time({
-  data <- USDA_plants_lkp(data, 'Vegetation', path = p2tax)
-})
+data <- USDA_plants_lkp(data, 'Vegetation', path = p2tax)
 
-time_associate_dropper <- system.time({ # remove the focal taxon from the noted associates
-  data <- associate_dropper(data, 'Full_name')
-})
+data <- associate_dropper(data, 'Full_name')
 
-time_date_parser <- system.time({ # parse dates into museum formats
-  data <- date_parser(data, coll_date = 'Date_digital', det_date = 'Determined_date')
-})
+data <- date_parser(data, coll_date = 'Date_digital', det_date = 'Determined_date')
 
 rm(p2geo, p2tax)
 ```
@@ -137,17 +115,15 @@ time_powo_searcher <- system.time({ # search for synonyms from plants of the wor
 
  rm(names, pow_res)
 }) # has been run
-
+  
 data <- data %>% 
   sf::st_as_sf()
 time_directions_grabber <- system.time({ # write directions to sites
   SoS_gkey = Sys.getenv("Sos_gkey")
-  data1 <- directions_grabber(data[1:50,], api_key = SoS_gkey)
-  data2 <- directions_grabber(data[52:67,], api_key = SoS_gkey)
-  data <- bind_rows(data1, data[51,], data2, data[51,])
+  data <- directions_grabber(data, api_key = SoS_gkey)
 })
 
-rm(data2, data1)
+rm(data1)
 ```
 
 ```{r accept changes from BL}
@@ -177,7 +153,9 @@ processed_cols <- read_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M',
   colnames() 
 
 df <- sf::st_drop_geometry(data) %>% 
-  select(any_of(processed_cols))
+  select(-geometry)  %>% 
+  relocate(any_of(processed_cols)) %>% 
+  arrange(Primary_Collector, Collection_number)
 
 write_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M', 
              sheet = 'Processed', data = df)
