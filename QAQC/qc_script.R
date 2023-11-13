@@ -1,5 +1,5 @@
-setwd('/media/steppe/ExternalHD/SoS_GB/QAQC')
-# setwd('/media/sagesteppe/ExternalHD/SoS_GB/QAQC')
+#setwd('/media/steppe/ExternalHD/SoS_GB/QAQC')
+setwd('/media/sagesteppe/ExternalHD/SoS_GB/QAQC')
 
 library(tidyverse)
 library(sf)
@@ -9,6 +9,7 @@ library(tigris)
 manual_cols <- c(
   'ObjectID', 'COLL_ID', 'Collection.Number', 'Seed.Collection.Reference.Number',
   'COLL_DT', 'adjusted_date', 'Did.you.collect.on.a.second.date.', 'SECOND_COLL_DT',
+  'Date.range', 'Creator',
   'Collector.Name.s.', 'Taxa', 'NRCS.PLANTS.Code', 'Approximate.Number.of.Plants.Found',
   'Number.of.Plants.Sampled', 'Collection.Area.Sampled.in.Acres', 'Seeds.Collected.From', 
   'Average.Plant.Height.in.Feet', 'Field.Notes', 'Elevation.in.feet', 'Subunit',
@@ -71,17 +72,25 @@ data <- data %>%
     'elevation_in_meters-FLAG' = if_else(is.na(elevation_in_meters), 'ERROR', NA),
     
     # multiple conditions
-    'empirical_seed_zone-FLAG' = if_else(nrcs_plants_code %in% emp_sz & is.na(empirical_seed_zone), 'ERROR', NA)
+    'empirical_seed_zone-FLAG' = if_else(nrcs_plants_code %in% emp_sz & is.na(empirical_seed_zone), 'ERROR', NA),
+    
+    # dates broken on gov't end
+    'adjusted_date-FLAG' = if_else(str_detect(adjusted_date, '1970'), 'ERROR', NA),
+    'adjusted_date2-FLAG' = if_else(str_detect(adjusted_date2, '1970'), 'ERROR', NA),
+    'date_range-FLAG' = if_else(str_detect(date_range, '-'), 'ERROR', NA)
+    
+    
   ) %>% 
-  select(object_id, coll_id, collection_number, seed_collection_reference_number, nrcs_plants_code, app_taxa = taxa, ends_with('FLAG')) %>% 
+  select(object_id, creator, coll_id, collection_number, seed_collection_reference_number, nrcs_plants_code, app_taxa = taxa, 
+         ends_with('FLAG')) %>% 
   arrange(coll_id, collection_number) %>% 
   mutate(long = unlist(map(.$geometry,1)),
          lat = unlist(map(.$geometry,2))) %>% 
-  st_drop_geometry() %>% 
-  
+  st_drop_geometry() %>%
+
   ## remove rows without any flags right here
   rowwise() %>% 
-  filter( sum(is.na( across(ends_with('FLAG')))) < 11) %>% 
+  filter( sum(is.na( across(ends_with('FLAG')))) < sum(str_detect( colnames(.), 'FLAG'))) %>% 
   ungroup() %>% 
 
   ## drop the flag part of name
@@ -98,16 +107,16 @@ data <- left_join(data, crews, by = 'coll_id') %>%
   arrange(Lead, lat, long) %>% 
   mutate(across(lat:long, \(x) round(x, 4)))
 
-data <- split(data, data$Lead)
+data <- split(data, data$creator)
 
 all_na <- function(x) all(is.na(x))
 
 data <- data %>% 
   map(., janitor::remove_empty, which = "cols")
 
-mapply(FUN = write.csv, data, file = paste0('results/', names(data), '.csv'), row.names = F)
+mapply(FUN = write.csv, data, file = paste0('results/', names(data), '-collect', '.csv'), row.names = F)
 
-rm(all_na, data, crews)
+rm(all_na, data)
 
 ############### QC for Scouting ##################
 
@@ -116,7 +125,7 @@ manual_cols <- c('objectid', 'coll_id', 'nrcs_plants_code', 'idiq', 'scout_date'
                  'date', 'taxa', 'estimated_population_size', 'number_of_acres', 'future_potential', 
                  'subunit', 'area_within_subunit', 'state', 'county', 'seed_zone', 
                  'did_you_collect_a_voucher_specimen', 'voucher_number',
-                 'collection_number', 'equation_form_submitted', 'x', 'y')
+                 'collection_number', 'equation_form_submitted', 'x', 'y', 'creator_1')
 
 idiq_spp <- read.csv('../scouting/data/target_taxa_2023.csv', na.strings = "") %>% 
   filter(Group %in% c('Grass', 'Forb')) %>% 
@@ -134,6 +143,7 @@ scouting <- read.csv('data/GreatBasin_Scouting_2023_1.csv', na.strings = "") %>%
   rename(equation_form_submitted = all_of(long)) %>% 
   filter(!str_detect(coll_id, 'FWS|FS')) %>% 
   select(all_of(manual_cols)) %>% 
+  rename(creator = creator_1) %>% 
   st_as_sf(coords = c('x', 'y'), crs = 4326, remove = F) %>% 
   st_transform(4269)
 
@@ -182,10 +192,9 @@ usgs_elev <- function(x){
   return(elev)
 }
 
+scouting$USGS_FT <- usgs_elev(scouting)
 
-# scouting$USGS_FT <- usgs_elev(scouting)
-
-rm(states, counties, seed_zones, usgs_elev)
+# rm(states, counties, seed_zones, usgs_elev)
 
 scouting <- scouting %>% 
   mutate(
@@ -208,7 +217,7 @@ scouting <- scouting %>%
     new_subunit.FLAG = str_remove(new_subunit.FLAG, ', NA$'),
     ) %>% 
   rename('new_subunit-FLAG' = new_subunit.FLAG) %>% 
-  select(objectid, coll_id, nrcs_plants_code, app_taxa = taxa, ends_with('FLAG')) %>% 
+  select(objectid, coll_id, nrcs_plants_code, app_taxa = taxa, creator, ends_with('FLAG')) %>% 
   arrange(coll_id, objectid) %>% 
   mutate(long = unlist(map(.$geometry,1)),
          lat = unlist(map(.$geometry,2))) %>% 
@@ -229,13 +238,16 @@ scouting <- scouting %>%
 
 scouting <- left_join(scouting, crews, by = 'coll_id') %>% 
   arrange(Lead, lat, long) %>% 
-  mutate(across(lat:long, \(x) round(x, 4)))
-scouting <- split(scouting, scouting$Lead)
+  mutate(across(lat:long, \(x) round(x, 4))) %>% 
+  filter(creator %in% c('hazeyserm', 'lmartin49', 'loganrees', 'paytonlott00', '112phoenixmcfarlane'))
+
+scouting <- split(scouting, scouting$creator)
 
 all_na <- function(x) all(is.na(x))
 
 scouting <- scouting %>% 
-  map(., janitor::remove_empty, which = "cols") 
+  map(., janitor::remove_empty, which = "cols")  %>% 
+  map(., select, -creator )
 
 mapply(FUN = write.csv, scouting, file = paste0('results/', names(scouting), '-scout', '.csv'), row.names = F)
 

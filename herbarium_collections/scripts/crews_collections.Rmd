@@ -165,17 +165,18 @@ write_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M',
 ```{r eval = F}
 
 processed <- read_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M',
-                        sheet = 'Processed')
+                        sheet = 'Processed') %>% 
+  sf::st_as_sf(coords = c(x = 'longitude_dd',  y = 'latitude_dd'), crs = 4326)
 
-df <- processed %>% 
-  mutate(latitude_dd = round(latitude_dd, digits = 4), 
-         longitude_dd = round(longitude_dd, digits = 4)) %>% 
-  sf::st_drop_geometry(data) %>% 
-  select(any_of(processed_cols)) %>% 
-  arrange(Primary_Collector, Collection_number)
-s
+p2geo <- '/media/steppe/hdd/Barneby_Lives-dev/geodata'
+processed <- political_grabber(processed, y = 'UNIQUEID', path = p2geo) 
+processed <- processed %>% 
+  #select(processed, -Feature, -Mountains) %>% 
+  sf::st_drop_geometry()# %>% 
+  select(-geometry)
+
 write_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M', 
-             sheet = 'Processed', data = df)
+             sheet = 'Processed', data = processed)
 ```
 
 ```{r load reed and save locally, eval = F}
@@ -186,3 +187,72 @@ data <- read_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M',
 
 write.csv(data, '/media/steppe/ExternalHD/SoS_GB/herbarium_collections/results/collections-Reed.csv')
 ```
+
+
+```{r load and run reeds last collection, eval = F}
+data <- read_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M', 
+                    sheet = 'Data Entry - Examples') %>% 
+  mutate(UNIQUEID = paste0(Primary_Collector, Collection_number)) %>% 
+  data.frame() 
+
+data <- dms2dd(data)
+data <- autofill_checker(data)
+data <- coords2sf(data)
+p2geo <- '/media/steppe/hdd/Barneby_Lives-dev/geodata'
+data <- political_grabber(data, y = 'UNIQUEID', path = p2geo)
+data <- physical_grabber(data, path = p2geo)
+data <- site_writer(data, path = p2geo)
+p2tax <- '/media/steppe/hdd/Barneby_Lives-dev/taxonomic_data'
+data <- spell_check(data = data, column = 'Full_name', path = p2tax)
+data <- family_spell_check(data, path = p2tax)
+data <- author_check(data, path = p2tax)
+data <- USDA_plants_lkp(data, 'Vegetation', path = p2tax)
+data <- associate_dropper(data, 'Full_name')
+data <- date_parser(data, coll_date = 'Date_digital', det_date = 'Determined_date')
+
+rm(p2geo, p2tax)
+
+names <- sf::st_drop_geometry(data) %>% 
+   pull(Full_name)
+
+pow_res <- lapply(names,
+     powo_searcher) %>% 
+     bind_rows()
+data <- bind_cols(data, pow_res)
+
+rm(names, pow_res)
+ 
+SoS_gkey = Sys.getenv("Sos_gkey")
+data <- data %>% 
+  sf::st_as_sf()
+
+data <- directions_grabber(data, api_key = SoS_gkey)
+
+cols <- read_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M', 
+             sheet = 'Processed - Examples') %>% 
+  colnames()
+
+data <- select(data, any_of(cols)) %>% 
+  sf::st_drop_geometry()
+  
+write_sheet(data, '1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M', 
+                    sheet = 'Processed - Examples')
+```
+
+```{r}
+set.seed(28)
+sites_in <- data.frame(
+  longitude_dd = runif(5, min = -120, max = -100),
+  latitude_dd = runif(5, min = 35, max = 48), 
+  Collection_number = 1:5
+  ) |>
+  sf::st_as_sf(coords = c('longitude_dd', 'latitude_dd'), crs = 4326)
+
+test_out <- site_writer(sites_in, path = '/media/steppe/hdd/Barneby_Lives-dev/geodata')
+
+geodata_writer(sites_in, path = '.')
+
+m <- sf::st_coordinates(sites_in)
+
+```
+

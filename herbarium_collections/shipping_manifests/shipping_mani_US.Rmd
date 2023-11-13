@@ -39,9 +39,8 @@ herbarium <- herbaria_info |>
 p <- '../results/'
 f <- paste0(p, list.files(p)[ grep('-', list.files(p)) ]) 
 
-specimens = data.table::rbindlist(lapply(f, data.table::fread), fill = T) |> 
+specimens <- data.table::rbindlist(lapply(f, data.table::fread), fill = T) |> 
   dplyr::select(Primary_Collector, Collection_number, Full_name) |> 
-  dplyr::filter(! Collection_number %in% c(370, 371)) |>
   dplyr::mutate(
     Packed = "", 
     Received = "", 

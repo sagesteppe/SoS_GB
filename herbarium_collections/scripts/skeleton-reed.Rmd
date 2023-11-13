@@ -21,11 +21,10 @@ library(BarnebyLives)
 ```
 
 ```{r load data}
-data <- read.csv('../results/collections.csv') |>
+data <- read.csv('../results/collections-Reed.csv') |>
   dplyr::filter(Collection_number == params$Collection_number) |>  
   sf::st_drop_geometry()
 ```
-
 \begin{center}
 \textbf{\LARGE Seeds of Success}
 \end{center}
@@ -37,8 +36,6 @@ data <- read.csv('../results/collections.csv') |>
 `r writer(paste(data$Genus, data$Epithet), italics = TRUE)` `r replace(data$Binomial_authority, is.na(data$Binomial_authority), "")` `r writer(data$Infrarank)` `r writer(data$Infraspecies, italics = TRUE)` `r writer(data$Infraspecific_authority)`  
 \normalsize
 \endgroup
-
-replace(data$Binomial_authority, is.na(data$Binomial_authority), "")
 
 \vspace*{\fill}
 \begingroup
