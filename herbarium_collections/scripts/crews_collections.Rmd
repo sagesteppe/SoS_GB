@@ -92,7 +92,6 @@ rm(p2geo, p2tax)
 ```{r accept or reject changes, eval = F}
 
 data <- data %>% 
-  mutate(Full_name =  if_else(Full_name == 'Helianthus annuuss', SpellCk.scientificName, Full_name)) %>% 
   select(-starts_with('SpellCk'), -'Match')
 
 ```
@@ -123,20 +122,19 @@ time_directions_grabber <- system.time({ # write directions to sites
   data <- directions_grabber(data, api_key = SoS_gkey)
 })
 
-rm(data1)
 ```
 
 ```{r accept changes from BL}
 
 data <- data %>% 
   mutate(
-    Epithet = POW_Epithet,
-    Genus = POW_Genus,
-    Full_name = POW_Full_name,
-    Name_authority = POW_Name_authority, 
-    Family = POW_Family,
-    Infrarank = POW_Infrarank,
-    Infraspecies = POW_Infraspecies,
+   # Epithet = POW_Epithet,
+  #  Genus = POW_Genus,
+  #  Full_name = POW_Full_name,
+  ##  Name_authority = POW_Name_authority, 
+  #  Family = POW_Family,
+  #  Infrarank = POW_Infrarank,
+  #  Infraspecies = POW_Infraspecies,
     Slope = slope, 
     Aspect = aspect
   )
@@ -188,7 +186,6 @@ data <- read_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M',
 write.csv(data, '/media/steppe/ExternalHD/SoS_GB/herbarium_collections/results/collections-Reed.csv')
 ```
 
-
 ```{r load and run reeds last collection, eval = F}
 data <- read_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M', 
                     sheet = 'Data Entry - Examples') %>% 
@@ -226,8 +223,10 @@ SoS_gkey = Sys.getenv("Sos_gkey")
 data <- data %>% 
   sf::st_as_sf()
 
-data <- directions_grabber(data, api_key = SoS_gkey)
+data <- data %>% 
+  select(-'Site...51', Site = 'Site...53')
 
+data <- directions_grabber(data, api_key = SoS_gkey)
 cols <- read_sheet('1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M', 
              sheet = 'Processed - Examples') %>% 
   colnames()
@@ -237,22 +236,5 @@ data <- select(data, any_of(cols)) %>%
   
 write_sheet(data, '1iOQBNeGqRJ3yhA-Sujas3xZ2Aw5rFkktUKv3N_e4o8M', 
                     sheet = 'Processed - Examples')
-```
-
-```{r}
-set.seed(28)
-sites_in <- data.frame(
-  longitude_dd = runif(5, min = -120, max = -100),
-  latitude_dd = runif(5, min = 35, max = 48), 
-  Collection_number = 1:5
-  ) |>
-  sf::st_as_sf(coords = c('longitude_dd', 'latitude_dd'), crs = 4326)
-
-test_out <- site_writer(sites_in, path = '/media/steppe/hdd/Barneby_Lives-dev/geodata')
-
-geodata_writer(sites_in, path = '.')
-
-m <- sf::st_coordinates(sites_in)
-
 ```
 
