@@ -35,5 +35,5 @@ Symbiota_crosswalk <- InHouse %>%
   bind_cols(., empty_cols) %>% 
   relocate(cname_lkp$Symbiota) 
   
-
 write.csv(Symbiota_crosswalk, row.names = F, 'Symbiota_crosswalk_OSC.csv')
+
